@@ -32,7 +32,6 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     const useAttachments = formData.get("useAttachments") === "true"
     const templateSubject = (formData.get("templateSubject") as string) || "Email with Images"
     const templateBody = (formData.get("templateBody") as string) || "{{content}}"
-    const senderName = (formData.get("senderName") as string) || "NBD CHARITY" // Get sender name from form data
 
     // Get contact information if available
     const contactNumber = formData.get("contactNumber") as string | null
@@ -148,7 +147,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
       // Send email using Nodemailer
       console.log("Sending email via Hostinger...")
       const mailOptions = {
-        from: `"${senderName}" <${process.env.HOSTINGER_EMAIL}>`, // Use custom sender name
+        from: `"Email Sender" <${process.env.HOSTINGER_EMAIL}>`,
         to: email,
         subject: templateSubject,
         html: htmlContent,

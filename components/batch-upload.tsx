@@ -50,7 +50,7 @@ export default function BatchUpload() {
   const { toast } = useToast()
   const [zipExtractionProgress, setZipExtractionProgress] = useState(0)
   const [extractingZip, setExtractingZip] = useState(false)
-  const [isSending, setIsSending] = useState(isSending)
+  const [isSending, setIsSending] = useState(false)
   const [sendingProgress, setSendingProgress] = useState(0)
   const [useAttachments, setUseAttachments] = useState(true)
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
@@ -574,7 +574,6 @@ export default function BatchUpload() {
           formData.append("templateId", selectedTemplate.id)
           formData.append("templateSubject", selectedTemplate.subject)
           formData.append("templateBody", selectedTemplate.body)
-          formData.append("senderName", selectedTemplate.senderName || "NBD CHARITY") // Add sender name
         }
 
         // Add files to FormData
@@ -588,29 +587,13 @@ export default function BatchUpload() {
 
           if (result.success) {
             successCount++
-            // Show toast for each successful email
-            toast({
-              title: "Email sent",
-              description: `Successfully sent email to ${contact.EMAIL}`,
-            })
           } else {
             failCount++
             console.error(`Failed to send email to ${contact.EMAIL}:`, result.error)
-            // Show toast for each failed email
-            toast({
-              title: "Failed to send email",
-              description: `Failed to send email to ${contact.EMAIL}: ${result.error || "Unknown error"}`,
-              variant: "destructive",
-            })
           }
         } catch (error) {
           failCount++
           console.error(`Error sending email to ${contact.EMAIL}:`, error)
-          toast({
-            title: "Error",
-            description: `Error sending email to ${contact.EMAIL}`,
-            variant: "destructive",
-          })
         }
 
         // Small delay to prevent UI freezing

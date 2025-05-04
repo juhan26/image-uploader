@@ -375,7 +375,6 @@ export default function Page() {
       formData.append("templateId", selectedTemplate.id)
       formData.append("templateSubject", selectedTemplate.subject)
       formData.append("templateBody", selectedTemplate.body)
-      formData.append("senderName", selectedTemplate.senderName || "NBD CHARITY") // Add sender name
 
       // Add attachment option
       formData.append("useAttachments", useAttachments.toString())
@@ -451,6 +450,8 @@ export default function Page() {
         description: "Something went wrong. Please try again.",
         variant: "destructive",
       })
+    } finally {
+      // Ensure we reset the submitting state
       setIsSubmitting(false)
     }
   }
