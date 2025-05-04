@@ -59,11 +59,11 @@
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
     "@vercel/blob": "latest",
-    "xlsx": "latest",
-    "jszip": "latest",
     "nodemailer": "latest",
     "uuid": "latest",
-    "browser-image-compression": "latest"
+    "xlsx": "latest",
+    "browser-image-compression": "latest",
+    "jszip": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

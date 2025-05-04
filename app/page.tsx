@@ -32,7 +32,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import BatchUpload from "@/components/batch-upload"
 import EmailHistory from "@/components/email-history"
 import EmailTemplates, { type EmailTemplate } from "@/components/email-templates"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // Tambahkan CSS untuk layar extra small
 const styles = `
@@ -146,29 +145,27 @@ export default function Page() {
       name: "Default Template",
       subject: "NBD CHARITY - Zakat Al fitri 2025",
       body: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>NBD CHARITY - Zakat Al fitri 2025</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>NBD CHARITY - Zakat Al fitri 2025</h2>
-        <p>Merci pour vote confiance, n'hésitez pas à me contacter si vous voulez parrainer les orphelins sur le long terme </p>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>NBD CHARITY - Zakat Al fitri 2025</title>
+    </head>
+    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2>NBD CHARITY - Zakat Al fitri 2025</h2>
+      <p>Merci pour vote confiance, n'hésitez pas à me contacter si vous voulez parrainer les orphelins sur le long terme </p>
 
-        <p>Rejoignez le groupe telegram en cliquant sur ce lien : </p>
+      <p>Rejoignez le groupe telegram en cliquant sur ce lien : </p>
 
-        <p> https://t.me/nbdcharity </p>
+      <p> https://t.me/nbdcharity </p>
 
-        <p> Qu'Allah vous récompense </p>
-        
-        {{content}}
-        
-        <p style="margin-top: 30px; color: #666;">Envoyé via sender.juhndaa.my.id</p>
-      </body>
-      </html>
-    `,
+      <p> Qu'Allah vous récompense </p>
+      {{content}}
+      <p style="margin-top: 30px; color: #666;">Envoyé via sender.juhndaa.my.id</p>
+    </body>
+    </html>
+  `,
     }
     setTemplates([defaultTemplate])
     setSelectedTemplateId(defaultTemplate.id)
@@ -855,22 +852,20 @@ export default function Page() {
                     {/* Template Selection */}
                     <div className="space-y-2">
                       <Label htmlFor="template-select">Email Template</Label>
-                      <Select
-                        value={selectedTemplateId}
-                        onValueChange={setSelectedTemplateId}
-                        defaultValue={templates.length > 0 ? templates[0].id : undefined}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select a template" />
-                        </SelectTrigger>
-                        <SelectContent>
+                      <div className="relative">
+                        <select
+                          id="template-select"
+                          value={selectedTemplateId}
+                          onChange={(e) => setSelectedTemplateId(e.target.value)}
+                          className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
                           {templates.map((template) => (
-                            <SelectItem key={template.id} value={template.id}>
+                            <option key={template.id} value={template.id}>
                               {template.name}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </div>
                       {selectedTemplate && (
                         <p className="text-xs text-muted-foreground">Subject: {selectedTemplate.subject}</p>
                       )}

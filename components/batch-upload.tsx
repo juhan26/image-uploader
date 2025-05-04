@@ -66,6 +66,7 @@ export default function BatchUpload() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default")
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
 
+  // Ubah bagian useEffect untuk memuat template
   useEffect(() => {
     try {
       const savedTemplates = localStorage.getItem("emailTemplates")
@@ -572,6 +573,12 @@ export default function BatchUpload() {
         formData.append("contactName", contact.NAME)
         // Dalam fungsi handleSendImages, tambahkan parameter useAttachments ke formData
         formData.append("useAttachments", useAttachments.toString())
+
+        // Tambahkan ini di bagian handleSendImages sebelum mengirim email
+        // Dalam fungsi handleSendImages, tambahkan parameter template ke formData
+        formData.append("templateId", selectedTemplate?.id || "default")
+        formData.append("templateSubject", selectedTemplate?.subject || "NBD CHARITY - Zakat Al fitri 2025")
+        formData.append("templateBody", selectedTemplate?.body || "")
 
         // Add files to FormData
         files.forEach((file) => {
