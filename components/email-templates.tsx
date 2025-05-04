@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Plus, Edit, Trash2, Save, X, Mail } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 // Define email template type
 export type EmailTemplate = {
@@ -229,59 +228,66 @@ export default function EmailTemplates() {
           </ScrollArea>
         )}
 
-        {/* Template Edit Dialog */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{isEditing ? "Edit Template" : "Add New Template"}</DialogTitle>
-            </DialogHeader>
-            {currentTemplate && (
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="template-name">Template Name</Label>
-                  <Input
-                    id="template-name"
-                    value={currentTemplate.name}
-                    onChange={(e) => setCurrentTemplate({ ...currentTemplate, name: e.target.value })}
-                    placeholder="e.g., Default Template"
-                  />
+        {/* Template Edit Dialog - Using a simple modal instead of Dialog component */}
+        {isDialogOpen && currentTemplate && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-background rounded-lg shadow-lg w-full max-w-[600px] max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">{isEditing ? "Edit Template" : "Add New Template"}</h2>
+                  <Button variant="ghost" size="icon" onClick={() => setIsDialogOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="template-subject">Email Subject</Label>
-                  <Input
-                    id="template-subject"
-                    value={currentTemplate.subject}
-                    onChange={(e) => setCurrentTemplate({ ...currentTemplate, subject: e.target.value })}
-                    placeholder="e.g., NBD CHARITY - Zakat Al fitri 2025"
-                  />
+
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="template-name">Template Name</Label>
+                    <Input
+                      id="template-name"
+                      value={currentTemplate.name}
+                      onChange={(e) => setCurrentTemplate({ ...currentTemplate, name: e.target.value })}
+                      placeholder="e.g., Default Template"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="template-subject">Email Subject</Label>
+                    <Input
+                      id="template-subject"
+                      value={currentTemplate.subject}
+                      onChange={(e) => setCurrentTemplate({ ...currentTemplate, subject: e.target.value })}
+                      placeholder="e.g., NBD CHARITY - Zakat Al fitri 2025"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="template-body">
+                      Email Body (HTML) - Include <code className="bg-muted p-1 rounded">{"{{content}}"}</code> where
+                      images should appear
+                    </Label>
+                    <Textarea
+                      id="template-body"
+                      value={currentTemplate.body}
+                      onChange={(e) => setCurrentTemplate({ ...currentTemplate, body: e.target.value })}
+                      placeholder="<div>Your email content here... {{content}}</div>"
+                      className="min-h-[200px] font-mono text-sm"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="template-body">
-                    Email Body (HTML) - Include <code className="bg-muted p-1 rounded">{"{{content}}"}</code> where
-                    images should appear
-                  </Label>
-                  <Textarea
-                    id="template-body"
-                    value={currentTemplate.body}
-                    onChange={(e) => setCurrentTemplate({ ...currentTemplate, body: e.target.value })}
-                    placeholder="<div>Your email content here... {{content}}</div>"
-                    className="min-h-[200px] font-mono text-sm"
-                  />
+
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button onClick={saveTemplate}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Template
+                  </Button>
                 </div>
               </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button onClick={saveTemplate}>
-                <Save className="h-4 w-4 mr-2" />
-                Save Template
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

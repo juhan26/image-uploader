@@ -62,8 +62,8 @@
     "nodemailer": "latest",
     "uuid": "latest",
     "xlsx": "latest",
-    "jszip": "latest",
-    "browser-image-compression": "latest"
+    "browser-image-compression": "latest",
+    "jszip": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

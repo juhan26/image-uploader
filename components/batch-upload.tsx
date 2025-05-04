@@ -17,9 +17,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { sendEmail } from "@/app/actions"
 import type { EmailTemplate } from "@/components/email-templates"
 
-// Import tabs components directly from @radix-ui
-import * as TabsPrimitive from "@radix-ui/react-tabs"
-
 // Define contact type with uppercase field names to match Excel
 type Contact = {
   NUMBER: string | number
@@ -37,12 +34,6 @@ type FileMapping = {
   preview?: string
 }
 
-// Custom Tabs components to avoid conflicts
-const BatchTabs = TabsPrimitive.Root
-const BatchTabsList = TabsPrimitive.List
-const BatchTabsTrigger = TabsPrimitive.Trigger
-const BatchTabsContent = TabsPrimitive.Content
-
 export default function BatchUpload() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [files, setFiles] = useState<File[]>([])
@@ -53,20 +44,20 @@ export default function BatchUpload() {
   const [processingStep, setProcessingStep] = useState("")
   const [matchStats, setMatchStats] = useState({ matched: 0, unmatched: 0, total: 0 })
   const [activeTab, setActiveTab] = useState("all")
-  const [uploadTab, setUploadTab] = useState("individual")
+  const [uploadMethod, setUploadMethod] = useState("individual")
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const zipInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const [zipExtractionProgress, setZipExtractionProgress] = useState(0)
   const [extractingZip, setExtractingZip] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [sendingProgress, setSendingProgress] = useState(0)
-  // Tambahkan state baru untuk opsi pengiriman
-  const [useAttachments, setUseAttachments] = useState(true) // Default ke true karena Blob suspended
+  const [useAttachments, setUseAttachments] = useState(true)
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default")
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
 
-  // Ubah bagian useEffect untuk memuat template
+  // Load templates from localStorage
   useEffect(() => {
     try {
       const savedTemplates = localStorage.getItem("emailTemplates")
@@ -606,7 +597,7 @@ export default function BatchUpload() {
         }
 
         // Small delay to prevent UI freezing
-        await new Promise((resolve) => setTimeout(resolve, 100))
+        await new Promise((resolve) => setTimeout(resolve, 200))
       }
 
       setSendingProgress(100)
@@ -655,6 +646,9 @@ export default function BatchUpload() {
     // Reset file inputs
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
+    }
+    if (zipInputRef.current) {
+      zipInputRef.current.value = ""
     }
 
     toast({
@@ -723,72 +717,80 @@ export default function BatchUpload() {
             )}
           </div>
 
-          <BatchTabs value={uploadTab} onValueChange={setUploadTab} className="w-full">
-            <BatchTabsList className="inline-flex h-8 sm:h-9 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 text-xs sm:text-sm">
-              <BatchTabsTrigger
-                value="individual"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-              >
-                Individual Files
-              </BatchTabsTrigger>
-              <BatchTabsTrigger
-                value="zip"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-              >
-                ZIP Archive
-              </BatchTabsTrigger>
-            </BatchTabsList>
+          {/* Simple tabs for upload method */}
+          <div className="flex border rounded-md overflow-hidden">
+            <button
+              className={`flex-1 py-2 px-4 text-sm font-medium ${
+                uploadMethod === "individual" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}
+              onClick={() => setUploadMethod("individual")}
+            >
+              Individual Files
+            </button>
+            <button
+              className={`flex-1 py-2 px-4 text-sm font-medium ${
+                uploadMethod === "zip" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              }`}
+              onClick={() => setUploadMethod("zip")}
+            >
+              ZIP Archive
+            </button>
+          </div>
 
-            <BatchTabsContent value="individual" className="mt-2">
-              <div
-                className={`border-2 ${isDragging ? "border-primary bg-primary/5" : "border-dashed"} rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors`}
-                onDragEnter={handleDragEnter}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <Input
-                  id="batch-file-upload"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileSelect}
-                  ref={fileInputRef}
-                />
-                <Label htmlFor="batch-file-upload" className="cursor-pointer flex flex-col items-center">
-                  <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                  <span className="text-sm font-medium">
-                    {isDragging ? "Drop images here" : "Click or drag images here to upload"}
-                  </span>
-                  <span className="text-xs text-muted-foreground mt-1">
-                    (Up to 1400 images, filenames should contain numbers that match the NUMBER field in Excel)
-                  </span>
-                </Label>
+          {uploadMethod === "individual" ? (
+            <div
+              className={`border-2 ${isDragging ? "border-primary bg-primary/5" : "border-dashed"} rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors`}
+              onDragEnter={handleDragEnter}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <Input
+                id="batch-file-upload"
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+                ref={fileInputRef}
+              />
+              <Label htmlFor="batch-file-upload" className="cursor-pointer flex flex-col items-center">
+                <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                <span className="text-sm font-medium">
+                  {isDragging ? "Drop images here" : "Click or drag images here to upload"}
+                </span>
+                <span className="text-xs text-muted-foreground mt-1">
+                  (Up to 1400 images, filenames should contain numbers that match the NUMBER field in Excel)
+                </span>
+              </Label>
+            </div>
+          ) : (
+            <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors">
+              <Input
+                id="zip-upload"
+                type="file"
+                accept=".zip"
+                className="hidden"
+                onChange={handleZipUpload}
+                ref={zipInputRef}
+              />
+              <Label htmlFor="zip-upload" className="cursor-pointer flex flex-col items-center">
+                <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-2" />
+                <span className="text-sm font-medium">Click to upload a ZIP file</span>
+                <span className="text-xs text-muted-foreground mt-1">(ZIP archive containing up to 1400 images)</span>
+              </Label>
+            </div>
+          )}
+
+          {extractingZip && (
+            <div className="mt-4 space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">{processingStep}</span>
+                <span className="text-sm text-muted-foreground">{zipExtractionProgress}%</span>
               </div>
-            </BatchTabsContent>
-
-            <BatchTabsContent value="zip" className="mt-2">
-              <div className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors">
-                <Input id="zip-upload" type="file" accept=".zip" className="hidden" onChange={handleZipUpload} />
-                <Label htmlFor="zip-upload" className="cursor-pointer flex flex-col items-center">
-                  <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-2" />
-                  <span className="text-sm font-medium">Click to upload a ZIP file</span>
-                  <span className="text-xs text-muted-foreground mt-1">(ZIP archive containing up to 1400 images)</span>
-                </Label>
-              </div>
-
-              {extractingZip && (
-                <div className="mt-4 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">{processingStep}</span>
-                    <span className="text-sm text-muted-foreground">{zipExtractionProgress}%</span>
-                  </div>
-                  <Progress value={zipExtractionProgress} className="h-2" />
-                </div>
-              )}
-            </BatchTabsContent>
-          </BatchTabs>
+              <Progress value={zipExtractionProgress} className="h-2" />
+            </div>
+          )}
         </div>
 
         {/* Processing Status */}
@@ -834,109 +836,134 @@ export default function BatchUpload() {
               </AlertDescription>
             </Alert>
 
-            <BatchTabs value={activeTab} onValueChange={setActiveTab}>
-              <BatchTabsList className="inline-flex h-9 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-3">
-                <BatchTabsTrigger
-                  value="all"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                >
-                  All Files ({matchStats.total})
-                </BatchTabsTrigger>
-                <BatchTabsTrigger
-                  value="matched"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                >
-                  Matched ({matchStats.matched})
-                </BatchTabsTrigger>
-                <BatchTabsTrigger
-                  value="unmatched"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                >
-                  Unmatched ({matchStats.unmatched})
-                </BatchTabsTrigger>
-              </BatchTabsList>
+            {/* Simple tabs for filteringg results */}
+            <div className="flex border rounded-md overflow-hidden mb-4">
+              <button
+                className={`flex-1 py-2 px-4 text-sm font-medium ${
+                  activeTab === "all" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+                onClick={() => setActiveTab("all")}
+              >
+                All Files ({matchStats.total})
+              </button>
+              <button
+                className={`flex-1 py-2 px-4 text-sm font-medium ${
+                  activeTab === "matched" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+                onClick={() => setActiveTab("matched")}
+              >
+                Matched ({matchStats.matched})
+              </button>
+              <button
+                className={`flex-1 py-2 px-4 text-sm font-medium ${
+                  activeTab === "unmatched" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+                onClick={() => setActiveTab("unmatched")}
+              >
+                Unmatched ({matchStats.unmatched})
+              </button>
+            </div>
 
-              <BatchTabsContent value={activeTab} className="mt-4">
-                <ScrollArea className="h-[300px] rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm">Preview</TableHead>
-                        <TableHead className="text-xs sm:text-sm">Original Filename</TableHead>
-                        <TableHead className="text-xs sm:text-sm">New Filename</TableHead>
-                        <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredMappings.map((mapping, index) => (
-                        <TableRow key={index}>
-                          <TableCell>
-                            {mapping.preview ? (
-                              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded overflow-hidden border">
-                                <img
-                                  src={mapping.preview || "/placeholder.svg"}
-                                  alt="Preview"
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded bg-muted flex items-center justify-center">
-                                <span className="text-xs text-muted-foreground">No preview</span>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
-                            {mapping.originalName}
-                          </TableCell>
-                          <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
-                            {mapping.newName}
-                          </TableCell>
-                          <TableCell>
-                            {mapping.matched ? (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] sm:text-xs">
-                                <Check className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
-                                <span className="hidden xs:inline">Matched</span>
-                                <span className="xs:hidden">✓</span>
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700 text-[10px] sm:text-xs">
-                                <AlertCircle className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
-                                <span className="hidden xs:inline">Unmatched</span>
-                                <span className="xs:hidden">!</span>
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </ScrollArea>
-              </BatchTabsContent>
-            </BatchTabs>
+            <ScrollArea className="h-[300px] rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm">Preview</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Original Filename</TableHead>
+                    <TableHead className="text-xs sm:text-sm">New Filename</TableHead>
+                    <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMappings.map((mapping, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        {mapping.preview ? (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded overflow-hidden border">
+                            <img
+                              src={mapping.preview || "/placeholder.svg"}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded bg-muted flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">No preview</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
+                        {mapping.originalName}
+                      </TableCell>
+                      <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
+                        {mapping.newName}
+                      </TableCell>
+                      <TableCell>
+                        {mapping.matched ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] sm:text-xs">
+                            <Check className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                            <span className="hidden xs:inline">Matched</span>
+                            <span className="xs:hidden">✓</span>
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 text-[10px] sm:text-xs">
+                            <AlertCircle className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                            <span className="hidden xs:inline">Unmatched</span>
+                            <span className="xs:hidden">!</span>
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           </div>
         )}
-      </CardContent>
 
-      {/* Tambahkan ini di CardContent sebelum CardFooter */}
-      <div className="space-y-2 mt-4">
-        <Label htmlFor="batch-template-select">Email Template</Label>
-        <div className="relative">
-          <select
-            id="batch-template-select"
-            value={selectedTemplateId}
-            onChange={(e) => setSelectedTemplateId(e.target.value)}
-            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            disabled={isSending}
-          >
-            {templates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </select>
+        {/* Template Selection */}
+        <div className="space-y-2 mt-4">
+          <Label htmlFor="batch-template-select">Email Template</Label>
+          <div className="relative">
+            <select
+              id="batch-template-select"
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+              className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              disabled={isSending}
+            >
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {selectedTemplate && <p className="text-xs text-muted-foreground">Subject: {selectedTemplate.subject}</p>}
         </div>
-        {selectedTemplate && <p className="text-xs text-muted-foreground">Subject: {selectedTemplate.subject}</p>}
-      </div>
+
+        {/* Delivery Method */}
+        <div className="space-y-2">
+          <Label>Metode Pengiriman</Label>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="batch-use-attachments"
+              checked={useAttachments}
+              onChange={(e) => setUseAttachments(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <Label htmlFor="batch-use-attachments" className="text-sm font-normal">
+              Kirim gambar sebagai lampiran email (direkomendasikan)
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {useAttachments
+              ? "Gambar akan dikirim sebagai lampiran email. Ukuran maksimum total: 10MB."
+              : "Gambar akan diunggah ke Vercel Blob dan ditampilkan dalam email."}
+          </p>
+        </div>
+      </CardContent>
 
       <CardFooter className="flex flex-col sm:flex-row gap-3 px-4 sm:px-6 pb-4 sm:pb-6">
         <Button variant="outline" onClick={resetAll} disabled={isProcessing || isSending}>
@@ -965,19 +992,6 @@ export default function BatchUpload() {
           </Button>
         </div>
       </CardFooter>
-      {/* Tambahkan UI untuk toggle opsi ini sebelum tombol Send di CardFooter */}
-      <div className="flex items-center space-x-2 mb-4">
-        <input
-          type="checkbox"
-          id="batch-use-attachments"
-          checked={useAttachments}
-          onChange={(e) => setUseAttachments(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-        />
-        <Label htmlFor="batch-use-attachments" className="text-sm font-normal">
-          Kirim gambar sebagai lampiran email (direkomendasikan)
-        </Label>
-      </div>
     </Card>
   )
 }
