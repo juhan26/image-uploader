@@ -351,6 +351,11 @@ export default function Page() {
       return
     }
 
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -406,14 +411,6 @@ export default function Page() {
         // Show more detailed error if available
         if (result.errorDetails) {
           console.error("Detailed error:", result.errorDetails)
-          toast({
-            title: "Error Details",
-            description:
-              typeof result.errorDetails === "string"
-                ? result.errorDetails
-                : "Check console for detailed error information",
-            variant: "destructive",
-          })
         }
 
         // Save failed attempt to history
@@ -429,6 +426,7 @@ export default function Page() {
         variant: "destructive",
       })
     } finally {
+      // Ensure we reset the submitting state
       setIsSubmitting(false)
     }
   }
@@ -494,7 +492,6 @@ export default function Page() {
       toast({
         title: "Too many files",
         description: "You can only upload a maximum of 5 images",
-        variant: "destructive",
       })
       return
     }

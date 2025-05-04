@@ -525,6 +525,11 @@ export default function BatchUpload() {
       return
     }
 
+    // Prevent multiple submissions
+    if (isSending) {
+      return
+    }
+
     setIsSending(true)
     setSendingProgress(10)
     setProcessingStep("Preparing to send images...")
@@ -571,14 +576,14 @@ export default function BatchUpload() {
         formData.append("email", contact.EMAIL)
         formData.append("contactNumber", String(contact.NUMBER))
         formData.append("contactName", contact.NAME)
-        // Dalam fungsi handleSendImages, tambahkan parameter useAttachments ke formData
         formData.append("useAttachments", useAttachments.toString())
 
-        // Tambahkan ini di bagian handleSendImages sebelum mengirim email
-        // Dalam fungsi handleSendImages, tambahkan parameter template ke formData
-        formData.append("templateId", selectedTemplate?.id || "default")
-        formData.append("templateSubject", selectedTemplate?.subject || "NBD CHARITY - Zakat Al fitri 2025")
-        formData.append("templateBody", selectedTemplate?.body || "")
+        // Add template information
+        if (selectedTemplate) {
+          formData.append("templateId", selectedTemplate.id)
+          formData.append("templateSubject", selectedTemplate.subject)
+          formData.append("templateBody", selectedTemplate.body)
+        }
 
         // Add files to FormData
         files.forEach((file) => {
@@ -599,6 +604,9 @@ export default function BatchUpload() {
           failCount++
           console.error(`Error sending email to ${contact.EMAIL}:`, error)
         }
+
+        // Small delay to prevent UI freezing
+        await new Promise((resolve) => setTimeout(resolve, 100))
       }
 
       setSendingProgress(100)
@@ -908,6 +916,27 @@ export default function BatchUpload() {
           </div>
         )}
       </CardContent>
+
+      {/* Tambahkan ini di CardContent sebelum CardFooter */}
+      <div className="space-y-2 mt-4">
+        <Label htmlFor="batch-template-select">Email Template</Label>
+        <div className="relative">
+          <select
+            id="batch-template-select"
+            value={selectedTemplateId}
+            onChange={(e) => setSelectedTemplateId(e.target.value)}
+            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            disabled={isSending}
+          >
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {selectedTemplate && <p className="text-xs text-muted-foreground">Subject: {selectedTemplate.subject}</p>}
+      </div>
 
       <CardFooter className="flex flex-col sm:flex-row gap-3 px-4 sm:px-6 pb-4 sm:pb-6">
         <Button variant="outline" onClick={resetAll} disabled={isProcessing || isSending}>
