@@ -146,7 +146,14 @@ export default function Page() {
       name: "Default Template",
       subject: "NBD CHARITY - Zakat Al fitri 2025",
       body: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>NBD CHARITY - Zakat Al fitri 2025</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2>NBD CHARITY - Zakat Al fitri 2025</h2>
         <p>Merci pour vote confiance, n'hésitez pas à me contacter si vous voulez parrainer les orphelins sur le long terme </p>
 
@@ -155,9 +162,12 @@ export default function Page() {
         <p> https://t.me/nbdcharity </p>
 
         <p> Qu'Allah vous récompense </p>
+        
         {{content}}
+        
         <p style="margin-top: 30px; color: #666;">Envoyé via sender.juhndaa.my.id</p>
-      </div>
+      </body>
+      </html>
     `,
     }
     setTemplates([defaultTemplate])
@@ -165,13 +175,6 @@ export default function Page() {
     setSelectedTemplate(defaultTemplate)
     localStorage.setItem("emailTemplates", JSON.stringify([defaultTemplate]))
   }
-
-  // Tambahkan ini di bawah useEffect untuk template
-  useEffect(() => {
-    console.log("Templates loaded:", templates)
-    console.log("Selected template ID:", selectedTemplateId)
-    console.log("Selected template:", selectedTemplate)
-  }, [templates, selectedTemplateId, selectedTemplate])
 
   // Update selected template when templates change or selectedTemplateId changes
   useEffect(() => {
@@ -606,7 +609,8 @@ export default function Page() {
                 </h1>
                 <p className="text-base sm:text-xl md:text-2xl text-white/90 mb-6 sm:mb-8">
                   Rejoignez notre mission pour aider les orphelins et faire une différence dans leur vie. Ensemble, nous
-                  pouvons apporter espoir et soutien à ceux qui en ont le plus besoin.
+                  pouvons apporter espoir et soutien à ceux qui en ont le leur vie. Ensemble, nous pouvons apporter
+                  espoir et soutien à ceux qui en ont le plus besoin.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                   <Button onClick={scrollToApp} size="default" className="gap-2 w-full sm:w-auto">
