@@ -99,33 +99,37 @@ export default function EmailHistory() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 sm:px-6">
         <div>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <Mail className="h-6 w-6" />
+          <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
+            <Mail className="h-5 w-5 sm:h-6 sm:w-6" />
             Riwayat Pengiriman Email
           </CardTitle>
-          <CardDescription>Daftar semua email yang telah dikirim melalui aplikasi ini</CardDescription>
+          <CardDescription className="text-sm">
+            Daftar semua email yang telah dikirim melalui aplikasi ini
+          </CardDescription>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={loadHistory}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={loadHistory} className="text-xs">
+            <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             Refresh
           </Button>
-          <Button variant="outline" size="sm" onClick={cleanBlobStorage} disabled={isCleaningBlob}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            {isCleaningBlob ? "Membersihkan..." : "Bersihkan Blob"}
+          <Button variant="outline" size="sm" onClick={cleanBlobStorage} disabled={isCleaningBlob} className="text-xs">
+            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            {isCleaningBlob ? "Cleaning..." : <span className="hidden xs:inline">Bersihkan Blob</span>}
+            {!isCleaningBlob && <span className="xs:hidden">Blob</span>}
           </Button>
           {history.length > 0 && (
-            <Button variant="outline" size="sm" onClick={clearHistory}>
-              <X className="h-4 w-4 mr-2" />
-              Hapus Riwayat
+            <Button variant="outline" size="sm" onClick={clearHistory} className="text-xs">
+              <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden xs:inline">Hapus Riwayat</span>
+              <span className="xs:hidden">Hapus</span>
             </Button>
           )}
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="px-4 sm:px-6">
         {isLoading ? (
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
@@ -140,11 +144,11 @@ export default function EmailHistory() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Status</TableHead>
-                  <TableHead>Penerima</TableHead>
-                  <TableHead>Kontak</TableHead>
-                  <TableHead className="w-[100px]">Jumlah Gambar</TableHead>
-                  <TableHead className="w-[150px]">Waktu</TableHead>
+                  <TableHead className="w-[70px] sm:w-[100px] text-xs sm:text-sm">Status</TableHead>
+                  <TableHead className="text-xs sm:text-sm">Penerima</TableHead>
+                  <TableHead className="hidden sm:table-cell text-xs sm:text-sm">Kontak</TableHead>
+                  <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Gambar</TableHead>
+                  <TableHead className="w-[100px] sm:w-[150px] text-xs sm:text-sm">Waktu</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -152,19 +156,23 @@ export default function EmailHistory() {
                   <TableRow key={item.id}>
                     <TableCell>
                       {item.status === "success" ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700">
-                          <Check className="h-3 w-3 mr-1" />
-                          Terkirim
+                        <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] sm:text-xs">
+                          <Check className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="hidden xs:inline">Terkirim</span>
+                          <span className="xs:hidden">✓</span>
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-red-50 text-red-700">
-                          <X className="h-3 w-3 mr-1" />
-                          Gagal
+                        <Badge variant="outline" className="bg-red-50 text-red-700 text-[10px] sm:text-xs">
+                          <X className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="hidden xs:inline">Gagal</span>
+                          <span className="xs:hidden">✗</span>
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{item.email}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
+                      {item.email}
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
                       {item.contactName && item.contactNumber ? (
                         <span>
                           #{item.contactNumber} - {item.contactName}
@@ -173,8 +181,8 @@ export default function EmailHistory() {
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell>{item.imageCount} gambar</TableCell>
-                    <TableCell>
+                    <TableCell className="text-xs sm:text-sm">{item.imageCount}</TableCell>
+                    <TableCell className="text-xs sm:text-sm whitespace-nowrap">
                       {formatDistanceToNow(new Date(item.timestamp), {
                         addSuffix: true,
                         locale: id,

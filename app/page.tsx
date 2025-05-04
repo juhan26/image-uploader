@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Upload,
   Mail,
@@ -16,7 +16,7 @@ import {
   ArrowDown,
   ImageIcon,
   Users,
-  Globe,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,20 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import BatchUpload from "@/components/batch-upload"
 import EmailHistory from "@/components/email-history"
+import EmailTemplates, { type EmailTemplate } from "@/components/email-templates"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+// Tambahkan CSS untuk layar extra small
+const styles = `
+  @media (min-width: 475px) {
+    .xs\\:inline {
+      display: inline;
+    }
+    .xs\\:hidden {
+      display: none;
+    }
+  }
+`
 
 // Define contact type with uppercase field names to match Excel
 type Contact = {
@@ -91,6 +105,81 @@ export default function Page() {
 
   // Tambahkan state baru untuk opsi pengiriman
   const [useAttachments, setUseAttachments] = useState(true) // Default ke true karena Blob suspended
+
+  // Tambahkan state untuk template email
+  const [templates, setTemplates] = useState<EmailTemplate[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default")
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
+
+  // Load templates from localStorage
+  useEffect(() => {
+    try {
+      const savedTemplates = localStorage.getItem("emailTemplates")
+      if (savedTemplates) {
+        const parsedTemplates = JSON.parse(savedTemplates) as EmailTemplate[]
+        if (Array.isArray(parsedTemplates) && parsedTemplates.length > 0) {
+          setTemplates(parsedTemplates)
+
+          // Set default template
+          const defaultTemplate = parsedTemplates.find((t) => t.id === "default") || parsedTemplates[0]
+          setSelectedTemplateId(defaultTemplate.id)
+          setSelectedTemplate(defaultTemplate)
+        } else {
+          // Create default template if parsed data is invalid
+          createDefaultTemplate()
+        }
+      } else {
+        // Create default template if no saved templates
+        createDefaultTemplate()
+      }
+    } catch (error) {
+      console.error("Error loading templates:", error)
+      // Create default template on error
+      createDefaultTemplate()
+    }
+  }, [])
+
+  // Function to create and set default template
+  const createDefaultTemplate = () => {
+    const defaultTemplate: EmailTemplate = {
+      id: "default",
+      name: "Default Template",
+      subject: "NBD CHARITY - Zakat Al fitri 2025",
+      body: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>NBD CHARITY - Zakat Al fitri 2025</h2>
+        <p>Merci pour vote confiance, n'hésitez pas à me contacter si vous voulez parrainer les orphelins sur le long terme </p>
+
+        <p>Rejoignez le groupe telegram en cliquant sur ce lien : </p>
+
+        <p> https://t.me/nbdcharity </p>
+
+        <p> Qu'Allah vous récompense </p>
+        {{content}}
+        <p style="margin-top: 30px; color: #666;">Envoyé via sender.juhndaa.my.id</p>
+      </div>
+    `,
+    }
+    setTemplates([defaultTemplate])
+    setSelectedTemplateId(defaultTemplate.id)
+    setSelectedTemplate(defaultTemplate)
+    localStorage.setItem("emailTemplates", JSON.stringify([defaultTemplate]))
+  }
+
+  // Tambahkan ini di bawah useEffect untuk template
+  useEffect(() => {
+    console.log("Templates loaded:", templates)
+    console.log("Selected template ID:", selectedTemplateId)
+    console.log("Selected template:", selectedTemplate)
+  }, [templates, selectedTemplateId, selectedTemplate])
+
+  // Update selected template when templates change or selectedTemplateId changes
+  useEffect(() => {
+    const template = templates.find((t) => t.id === selectedTemplateId)
+    if (template) {
+      setSelectedTemplate(template)
+    }
+  }, [templates, selectedTemplateId])
 
   // Save email history to localStorage
   const saveEmailHistory = (historyItem: EmailHistoryItem) => {
@@ -253,6 +342,15 @@ export default function Page() {
       return
     }
 
+    if (!selectedTemplate) {
+      toast({
+        title: "Template required",
+        description: "Please select an email template",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -265,9 +363,15 @@ export default function Page() {
         formData.append("contactName", selectedContact.NAME)
       }
 
-      // Dalam fungsi handleSubmit, tambahkan parameter useAttachments ke formData
+      // Add template information
+      formData.append("templateId", selectedTemplate.id)
+      formData.append("templateSubject", selectedTemplate.subject)
+      formData.append("templateBody", selectedTemplate.body)
+
+      // Add attachment option
       formData.append("useAttachments", useAttachments.toString())
 
+      // Add files
       files.forEach((file) => {
         formData.append("files", file)
       })
@@ -298,6 +402,19 @@ export default function Page() {
           description: result.error || "Failed to send images",
           variant: "destructive",
         })
+
+        // Show more detailed error if available
+        if (result.errorDetails) {
+          console.error("Detailed error:", result.errorDetails)
+          toast({
+            title: "Error Details",
+            description:
+              typeof result.errorDetails === "string"
+                ? result.errorDetails
+                : "Check console for detailed error information",
+            variant: "destructive",
+          })
+        }
 
         // Save failed attempt to history
         if (result.historyItem) {
@@ -431,6 +548,9 @@ export default function Page() {
 
   return (
     <>
+      <style jsx global>
+        {styles}
+      </style>
       {/* Landing Page Section */}
       <div className="relative min-h-screen flex flex-col">
         {/* Background image with overlay */}
@@ -445,16 +565,19 @@ export default function Page() {
         {/* Content */}
         <div className="relative z-10 flex-1 flex flex-col">
           {/* Header */}
-          <header className="container mx-auto py-6 px-4">
+          <header className="container mx-auto py-4 sm:py-6 px-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Heart className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold text-white">NBD CHARITY</h1>
+                <Heart className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                <h1 className="text-xl sm:text-2xl font-bold text-white">NBD CHARITY</h1>
               </div>
               <nav>
-                <ul className="flex gap-6">
+                <ul className="flex gap-3 sm:gap-6">
                   <li>
-                    <button onClick={scrollToApp} className="text-white hover:text-primary transition-colors">
+                    <button
+                      onClick={scrollToApp}
+                      className="text-sm sm:text-base text-white hover:text-primary transition-colors"
+                    >
                       Application
                     </button>
                   </li>
@@ -463,7 +586,7 @@ export default function Page() {
                       href="https://t.me/nbdcharity"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-white hover:text-primary transition-colors"
+                      className="text-sm sm:text-base text-white hover:text-primary transition-colors"
                     >
                       Telegram
                     </a>
@@ -476,26 +599,33 @@ export default function Page() {
           {/* Main content */}
           <main className="container mx-auto px-4 flex-1 flex flex-col">
             {/* Hero Section */}
-            <div className="flex flex-col items-center justify-center text-center py-20">
-              <div className="max-w-3xl mx-auto">
-                <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">Nourris Un Orphelin</h1>
-                <p className="text-xl md:text-2xl text-white/90 mb-8">
+            <div className="flex flex-col items-center justify-center text-center py-10 sm:py-16 md:py-20">
+              <div className="max-w-3xl mx-auto px-4">
+                <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6">
+                  Nourris Un Orphelin
+                </h1>
+                <p className="text-base sm:text-xl md:text-2xl text-white/90 mb-6 sm:mb-8">
                   Rejoignez notre mission pour aider les orphelins et faire une différence dans leur vie. Ensemble, nous
                   pouvons apporter espoir et soutien à ceux qui en ont le plus besoin.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button onClick={scrollToApp} size="lg" className="gap-2">
-                    <Mail className="h-5 w-5" />
-                    Accéder à l'application
-                    <ArrowDown className="h-4 w-4 ml-1" />
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                  <Button onClick={scrollToApp} size="default" className="gap-2 w-full sm:w-auto">
+                    <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="text-sm sm:text-base">Accéder à l'application</span>
+                    <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
                   </Button>
                   <Button
                     asChild
-                    size="lg"
+                    size="default"
                     variant="outline"
-                    className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white"
+                    className="bg-white/10 text-white border-white/20 hover:bg-white/20 hover:text-white w-full sm:w-auto"
                   >
-                    <a href="https://t.me/nbdcharity" target="_blank" rel="noopener noreferrer">
+                    <a
+                      href="https://t.me/nbdcharity"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm sm:text-base"
+                    >
                       Rejoindre notre Telegram
                     </a>
                   </Button>
@@ -504,9 +634,9 @@ export default function Page() {
             </div>
 
             {/* Features Section */}
-            <div className="py-16">
-              <h2 className="text-3xl font-bold text-white text-center mb-12">Notre Application</h2>
-              <div className="grid md:grid-cols-3 gap-8">
+            <div className="py-10 sm:py-16 px-4">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white text-center mb-8 sm:mb-12">Notre Application</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
                 <FeatureCard
                   icon={ImageIcon}
                   title="Envoi d'Images"
@@ -518,9 +648,9 @@ export default function Page() {
                   description="Importez et gérez facilement vos contacts pour une communication efficace avec les donateurs et les bénéficiaires."
                 />
                 <FeatureCard
-                  icon={Globe}
-                  title="Impact Global"
-                  description="Contribuez à notre mission mondiale d'aide aux orphelins et faites une différence dans leur vie."
+                  icon={FileText}
+                  title="Templates Personnalisés"
+                  description="Créez et utilisez des templates d'email personnalisés pour différentes campagnes et communications."
                 />
               </div>
             </div>
@@ -529,29 +659,33 @@ export default function Page() {
       </div>
 
       {/* App Section */}
-      <div id="app-section" className="bg-background py-10">
+      <div id="app-section" className="bg-background py-8 sm:py-10">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8 text-center">NBD CHARITY - Email Sender</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">NBD CHARITY - Email Sender</h2>
 
           <Tabs defaultValue="single" className="max-w-2xl mx-auto">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4 text-xs sm:text-sm">
               <TabsTrigger value="single">Single Email</TabsTrigger>
               <TabsTrigger value="batch">Batch Upload</TabsTrigger>
+              <TabsTrigger value="templates">Templates</TabsTrigger>
               <TabsTrigger value="history">
-                <History className="h-4 w-4 mr-2" />
-                Riwayat
+                <History className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Riwayat</span>
+                <span className="xs:hidden">History</span>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="single">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-2xl">Send Images via Email</CardTitle>
-                  <CardDescription>Upload up to 5 images and send them to any email address</CardDescription>
+                <CardHeader className="px-4 sm:px-6">
+                  <CardTitle className="text-xl sm:text-2xl">Send Images via Email</CardTitle>
+                  <CardDescription className="text-sm">
+                    Upload up to 5 images and send them to any email address
+                  </CardDescription>
                 </CardHeader>
 
                 <form onSubmit={handleSubmit}>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
                     {/* Excel Import Section */}
                     <div className="space-y-2">
                       <Label>Import Contacts (Excel)</Label>
@@ -714,6 +848,30 @@ export default function Page() {
                       </div>
                     </div>
 
+                    {/* Template Selection */}
+                    <div className="space-y-2">
+                      <Label htmlFor="template-select">Email Template</Label>
+                      <Select
+                        value={selectedTemplateId}
+                        onValueChange={setSelectedTemplateId}
+                        defaultValue={templates.length > 0 ? templates[0].id : undefined}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templates.map((template) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              {template.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedTemplate && (
+                        <p className="text-xs text-muted-foreground">Subject: {selectedTemplate.subject}</p>
+                      )}
+                    </div>
+
                     {/* Delivery Method */}
                     <div className="space-y-2">
                       <Label>Metode Pengiriman</Label>
@@ -766,7 +924,7 @@ export default function Page() {
                       </div>
 
                       {previews.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mt-4">
                           {previews.map((preview, index) => (
                             <div key={index} className="relative group">
                               <div className="aspect-square rounded-md overflow-hidden border bg-muted">
@@ -790,8 +948,12 @@ export default function Page() {
                     </div>
                   </CardContent>
 
-                  <CardFooter>
-                    <Button type="submit" className="w-full" disabled={isSubmitting || files.length === 0 || !email}>
+                  <CardFooter className="px-4 sm:px-6 pb-4 sm:pb-6">
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      disabled={isSubmitting || files.length === 0 || !email || !selectedTemplate}
+                    >
                       {isSubmitting ? (
                         <span className="flex items-center gap-2">
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -811,6 +973,10 @@ export default function Page() {
 
             <TabsContent value="batch">
               <BatchUpload />
+            </TabsContent>
+
+            <TabsContent value="templates">
+              <EmailTemplates />
             </TabsContent>
 
             <TabsContent value="history">

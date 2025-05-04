@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Upload, FileSpreadsheet, Download, Check, AlertCircle, RefreshCw, Layers, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { sendEmail } from "@/app/actions"
+import type { EmailTemplate } from "@/components/email-templates"
 
 // Import tabs components directly from @radix-ui
 import * as TabsPrimitive from "@radix-ui/react-tabs"
@@ -61,6 +62,36 @@ export default function BatchUpload() {
   const [sendingProgress, setSendingProgress] = useState(0)
   // Tambahkan state baru untuk opsi pengiriman
   const [useAttachments, setUseAttachments] = useState(true) // Default ke true karena Blob suspended
+  const [templates, setTemplates] = useState<EmailTemplate[]>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default")
+  const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
+
+  useEffect(() => {
+    try {
+      const savedTemplates = localStorage.getItem("emailTemplates")
+      if (savedTemplates) {
+        const parsedTemplates = JSON.parse(savedTemplates)
+        if (Array.isArray(parsedTemplates) && parsedTemplates.length > 0) {
+          setTemplates(parsedTemplates)
+
+          // Set default template
+          const defaultTemplate = parsedTemplates.find((t) => t.id === "default") || parsedTemplates[0]
+          setSelectedTemplateId(defaultTemplate.id)
+          setSelectedTemplate(defaultTemplate)
+        }
+      }
+    } catch (error) {
+      console.error("Error loading templates:", error)
+    }
+  }, [])
+
+  // Update selected template when templates change or selectedTemplateId changes
+  useEffect(() => {
+    const template = templates.find((t) => t.id === selectedTemplateId)
+    if (template) {
+      setSelectedTemplate(template)
+    }
+  }, [templates, selectedTemplateId])
 
   // Handle Excel file import
   const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -627,17 +658,17 @@ export default function BatchUpload() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl flex items-center gap-2">
-          <Layers className="h-6 w-6" />
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="text-xl sm:text-2xl flex items-center gap-2">
+          <Layers className="h-5 w-5 sm:h-6 sm:w-6" />
           Batch File Processor
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm">
           Upload up to 1400 images and match them with NUMBER values from your Excel data
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
         {/* Step 1: Import Excel */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -678,16 +709,16 @@ export default function BatchUpload() {
           </div>
 
           <BatchTabs value={uploadTab} onValueChange={setUploadTab} className="w-full">
-            <BatchTabsList className="inline-flex h-9 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-2">
+            <BatchTabsList className="inline-flex h-8 sm:h-9 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 text-xs sm:text-sm">
               <BatchTabsTrigger
                 value="individual"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 Individual Files
               </BatchTabsTrigger>
               <BatchTabsTrigger
                 value="zip"
-                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                className="inline-flex items-center justify-center whitespace-nowrap rounded-md px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
               >
                 ZIP Archive
               </BatchTabsTrigger>
@@ -815,10 +846,10 @@ export default function BatchUpload() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[80px]">Preview</TableHead>
-                        <TableHead>Original Filename</TableHead>
-                        <TableHead>New Filename</TableHead>
-                        <TableHead className="w-[100px]">Status</TableHead>
+                        <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm">Preview</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Original Filename</TableHead>
+                        <TableHead className="text-xs sm:text-sm">New Filename</TableHead>
+                        <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -826,7 +857,7 @@ export default function BatchUpload() {
                         <TableRow key={index}>
                           <TableCell>
                             {mapping.preview ? (
-                              <div className="w-16 h-16 rounded overflow-hidden border">
+                              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded overflow-hidden border">
                                 <img
                                   src={mapping.preview || "/placeholder.svg"}
                                   alt="Preview"
@@ -834,23 +865,29 @@ export default function BatchUpload() {
                                 />
                               </div>
                             ) : (
-                              <div className="w-16 h-16 rounded bg-muted flex items-center justify-center">
+                              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded bg-muted flex items-center justify-center">
                                 <span className="text-xs text-muted-foreground">No preview</span>
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="font-mono text-xs">{mapping.originalName}</TableCell>
-                          <TableCell className="font-mono text-xs">{mapping.newName}</TableCell>
+                          <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
+                            {mapping.originalName}
+                          </TableCell>
+                          <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
+                            {mapping.newName}
+                          </TableCell>
                           <TableCell>
                             {mapping.matched ? (
-                              <Badge variant="outline" className="bg-green-50 text-green-700">
-                                <Check className="h-3 w-3 mr-1" />
-                                Matched
+                              <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] sm:text-xs">
+                                <Check className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                                <span className="hidden xs:inline">Matched</span>
+                                <span className="xs:hidden">✓</span>
                               </Badge>
                             ) : (
-                              <Badge variant="outline" className="bg-amber-50 text-amber-700">
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                                Unmatched
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 text-[10px] sm:text-xs">
+                                <AlertCircle className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                                <span className="hidden xs:inline">Unmatched</span>
+                                <span className="xs:hidden">!</span>
                               </Badge>
                             )}
                           </TableCell>
@@ -865,7 +902,7 @@ export default function BatchUpload() {
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-col sm:flex-row gap-3">
+      <CardFooter className="flex flex-col sm:flex-row gap-3 px-4 sm:px-6 pb-4 sm:pb-6">
         <Button variant="outline" onClick={resetAll} disabled={isProcessing || isSending}>
           <RefreshCw className="h-4 w-4 mr-2" />
           Reset

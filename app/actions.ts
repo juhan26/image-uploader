@@ -11,6 +11,7 @@ type SendEmailResponse = {
   error?: string
   data?: any
   historyItem?: EmailHistoryItem
+  errorDetails?: any
 }
 
 // Define email history item type
@@ -30,6 +31,9 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     const email = formData.get("email") as string
     const files = formData.getAll("files") as File[]
     const useAttachments = formData.get("useAttachments") === "true"
+    const templateId = (formData.get("templateId") as string) || "default"
+    const templateSubject = (formData.get("templateSubject") as string) || emailConfig.templates.default.subject
+    const templateBody = (formData.get("templateBody") as string) || emailConfig.templates.default.body
 
     // Get contact information if available
     const contactNumber = formData.get("contactNumber") as string | null
@@ -103,6 +107,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
           return {
             success: false,
             error: "Failed to upload images. Please try again.",
+            errorDetails: uploadError instanceof Error ? uploadError.message : "Unknown upload error",
           }
         }
       }
@@ -128,48 +133,70 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     }
 
     // Get email template and replace content placeholder
-    const htmlContent = emailConfig.templates.default.body.replace("{{content}}", contentHtml)
+    const htmlContent = templateBody.replace("{{content}}", contentHtml)
 
-    // Create a transporter using Hostinger SMTP (tetap menggunakan konfigurasi yang sama)
+    // Create a transporter using Hostinger SMTP
     const transporter = nodemailer.createTransport({
       host: "smtp.hostinger.com", // Hostinger SMTP server
       port: 465, // SSL port
       secure: true, // Use SSL
       auth: {
-        user: process.env.HOSTINGER_EMAIL, // Tetap menggunakan HOSTINGER_EMAIL
-        pass: process.env.HOSTINGER_PASSWORD, // Tetap menggunakan HOSTINGER_PASSWORD
+        user: process.env.HOSTINGER_EMAIL,
+        pass: process.env.HOSTINGER_PASSWORD,
       },
     })
 
     // Send email using Nodemailer
     console.log("Sending email via Hostinger...")
     const mailOptions = {
-      from: `"${emailConfig.senderName}" <${process.env.HOSTINGER_EMAIL}>`, // Tetap menggunakan HOSTINGER_EMAIL
+      from: `"${emailConfig.senderName}" <${process.env.HOSTINGER_EMAIL}>`,
       to: email,
       subject: contactDisplay, // Use contact info in subject line too
       html: htmlContent,
       attachments: attachments,
     }
 
-    const info = await transporter.sendMail(mailOptions)
+    try {
+      const info = await transporter.sendMail(mailOptions)
+      console.log("Email sent successfully:", info)
 
-    console.log("Email sent successfully:", info)
+      // Create history item
+      const historyItem: EmailHistoryItem = {
+        id: uuidv4(),
+        email,
+        contactName: contactName || undefined,
+        contactNumber: contactNumber || undefined,
+        timestamp: Date.now(),
+        status: "success",
+        imageCount: files.length,
+      }
 
-    // Create history item
-    const historyItem: EmailHistoryItem = {
-      id: uuidv4(),
-      email,
-      contactName: contactName || undefined,
-      contactNumber: contactNumber || undefined,
-      timestamp: Date.now(),
-      status: "success",
-      imageCount: files.length,
-    }
+      return {
+        success: true,
+        data: info,
+        historyItem,
+      }
+    } catch (emailError) {
+      console.error("Error sending email:", emailError)
 
-    return {
-      success: true,
-      data: info,
-      historyItem,
+      // Create failed history item
+      const historyItem: EmailHistoryItem = {
+        id: uuidv4(),
+        email,
+        contactName: contactName || undefined,
+        contactNumber: contactNumber || undefined,
+        timestamp: Date.now(),
+        status: "failed",
+        imageCount: files.length,
+        errorMessage: emailError instanceof Error ? emailError.message : "An unknown error occurred",
+      }
+
+      return {
+        success: false,
+        error: "Failed to send email. Please check your email configuration.",
+        errorDetails: emailError instanceof Error ? emailError.message : "Unknown email error",
+        historyItem,
+      }
     }
   } catch (error) {
     console.error("Server error:", error)
@@ -189,6 +216,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     return {
       success: false,
       error: error instanceof Error ? error.message : "An unknown error occurred",
+      errorDetails: error,
       historyItem,
     }
   }

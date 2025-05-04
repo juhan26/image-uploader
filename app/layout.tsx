@@ -10,6 +10,12 @@ export const metadata = {
   title: "NBD CHARITY - Nourris Un Orphelin",
   description: "Rejoignez notre mission pour aider les orphelins et faire une différence dans leur vie.",
   metadataBase: new URL("https://sender.juhndaa.my.id"),
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
     generator: 'v0.dev'
 }
 
