@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Upload,
   Mail,
@@ -101,6 +101,8 @@ export default function Page() {
 
   // Add these new state variables after the existing state declarations
   const [isDragging, setIsDragging] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Tambahkan state baru untuk opsi pengiriman
   const [useAttachments, setUseAttachments] = useState(true) // Default ke true karena Blob suspended
@@ -357,6 +359,7 @@ export default function Page() {
     }
 
     setIsSubmitting(true)
+    setProgress(10)
 
     try {
       const formData = new FormData()
@@ -381,43 +384,65 @@ export default function Page() {
         formData.append("files", file)
       })
 
-      const result = await sendEmail(formData)
+      setProgress(30)
 
-      if (result.success) {
-        toast({
-          title: "Success!",
-          description: `Images sent to ${email}`,
-        })
+      // Send email with a delay to allow UI to update
+      setTimeout(async () => {
+        try {
+          setProgress(50)
+          const result = await sendEmail(formData)
+          setProgress(100)
 
-        // Save to history if historyItem is available
-        if (result.historyItem) {
-          saveEmailHistory(result.historyItem)
+          if (result.success) {
+            toast({
+              title: "Success!",
+              description: `Images sent to ${email}`,
+            })
+
+            // Save to history if historyItem is available
+            if (result.historyItem) {
+              saveEmailHistory(result.historyItem)
+            }
+
+            // Reset form
+            setEmail("")
+            setFiles([])
+            setPreviews([])
+            setSelectedContact(null)
+            setNameQuery("")
+            setNumberQuery("")
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ""
+            }
+          } else {
+            toast({
+              title: "Error",
+              description: result.error || "Failed to send images",
+              variant: "destructive",
+            })
+
+            // Show more detailed error if available
+            if (result.errorDetails) {
+              console.error("Detailed error:", result.errorDetails)
+            }
+
+            // Save failed attempt to history
+            if (result.historyItem) {
+              saveEmailHistory(result.historyItem)
+            }
+          }
+        } catch (error) {
+          console.error("Client error:", error)
+          toast({
+            title: "Error",
+            description: "Something went wrong. Please try again.",
+            variant: "destructive",
+          })
+        } finally {
+          // Ensure we reset the submitting state
+          setIsSubmitting(false)
         }
-
-        // Reset form
-        setEmail("")
-        setFiles([])
-        setPreviews([])
-        setSelectedContact(null)
-        setNameQuery("")
-        setNumberQuery("")
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to send images",
-          variant: "destructive",
-        })
-
-        // Show more detailed error if available
-        if (result.errorDetails) {
-          console.error("Detailed error:", result.errorDetails)
-        }
-
-        // Save failed attempt to history
-        if (result.historyItem) {
-          saveEmailHistory(result.historyItem)
-        }
-      }
+      }, 500)
     } catch (error) {
       console.error("Client error:", error)
       toast({
@@ -942,6 +967,14 @@ export default function Page() {
                         </div>
                       )}
                     </div>
+                    {isSubmitting && (
+                      <div className="mt-4">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">Sending email... {progress}%</p>
+                      </div>
+                    )}
                   </CardContent>
 
                   <CardFooter className="px-4 sm:px-6 pb-4 sm:pb-6">
