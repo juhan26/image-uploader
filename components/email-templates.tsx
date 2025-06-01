@@ -16,6 +16,7 @@ export type EmailTemplate = {
   name: string
   subject: string
   body: string
+  senderName?: string // Tambahkan field senderName
 }
 
 export default function EmailTemplates() {
@@ -53,17 +54,18 @@ export default function EmailTemplates() {
     const defaultTemplate: EmailTemplate = {
       id: "default",
       name: "Default Template",
-      subject: "NBD CHARITY - Zakat Al fitri 2025",
+      subject: "NBD CHARITY - Eid al-Adha 2025",
+      senderName: "NBD CHARITY", // Default sender name
       body: `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>NBD CHARITY - Zakat Al fitri 2025</title>
+        <title>NBD CHARITY - Eid al-Adha 2025</title>
       </head>
       <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2>NBD CHARITY - Zakat Al fitri 2025</h2>
+        <h2>NBD CHARITY - Eid al-Adha 2025</h2>
         <p>Merci pour vote confiance, n'hésitez pas à me contacter si vous voulez parrainer les orphelins sur le long terme </p>
 
         <p>Rejoignez le groupe telegram en cliquant sur ce lien : </p>
@@ -93,6 +95,7 @@ export default function EmailTemplates() {
       id: Date.now().toString(),
       name: "",
       subject: "",
+      senderName: "NBD CHARITY", // Default sender name
       body: "",
     })
     setIsEditing(false)
@@ -216,6 +219,7 @@ export default function EmailTemplates() {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">Subject: {template.subject}</p>
+                    <p className="text-sm text-muted-foreground">From: {template.senderName || "NBD CHARITY"}</p>
                   </div>
                   <div className="p-4 border-t max-h-32 overflow-hidden text-ellipsis">
                     <div className="text-xs text-muted-foreground whitespace-pre-wrap line-clamp-3">
@@ -258,6 +262,16 @@ export default function EmailTemplates() {
                       onChange={(e) => setCurrentTemplate({ ...currentTemplate, subject: e.target.value })}
                       placeholder="e.g., NBD CHARITY - Zakat Al fitri 2025"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="template-sender">Sender Name</Label>
+                    <Input
+                      id="template-sender"
+                      value={currentTemplate.senderName || ""}
+                      onChange={(e) => setCurrentTemplate({ ...currentTemplate, senderName: e.target.value })}
+                      placeholder="e.g., NBD CHARITY"
+                    />
+                    <p className="text-xs text-muted-foreground">This name will appear as the sender of the email</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="template-body">
