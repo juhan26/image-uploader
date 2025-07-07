@@ -112,6 +112,9 @@ export default function Page() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default")
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
 
+  // Konstanta untuk limit file
+  const MAX_FILES = 20 // Ubah dari 5 menjadi 20
+
   // Load templates from localStorage
   useEffect(() => {
     try {
@@ -260,11 +263,11 @@ export default function Page() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || [])
 
-    // Limit to 5 files total
-    if (files.length + selectedFiles.length > 5) {
+    // Limit to MAX_FILES total
+    if (files.length + selectedFiles.length > MAX_FILES) {
       toast({
         title: "Too many files",
-        description: "You can only upload a maximum of 5 images",
+        description: `You can only upload a maximum of ${MAX_FILES} images`,
         variant: "destructive",
       })
       return
@@ -511,11 +514,12 @@ export default function Page() {
       return
     }
 
-    // Limit to 5 files total
-    if (files.length + droppedFiles.length > 5) {
+    // Limit to MAX_FILES total
+    if (files.length + droppedFiles.length > MAX_FILES) {
       toast({
         title: "Too many files",
-        description: "You can only upload a maximum of 5 images",
+        description: `You can only upload a maximum of ${MAX_FILES} images`,
+        variant: "destructive",
       })
       return
     }
@@ -702,7 +706,7 @@ export default function Page() {
                 <CardHeader className="px-4 sm:px-6">
                   <CardTitle className="text-xl sm:text-2xl">Send Images via Email</CardTitle>
                   <CardDescription className="text-sm">
-                    Upload up to 5 images and send them to any email address
+                    Upload up to {MAX_FILES} images and send them to any email address
                   </CardDescription>
                 </CardHeader>
 
@@ -748,7 +752,7 @@ export default function Page() {
                               variant="outline"
                               role="combobox"
                               aria-expanded={namePopoverOpen}
-                              className="w-full justify-between"
+                              className="w-full justify-between bg-transparent"
                               disabled={contacts.length === 0}
                             >
                               <div className="flex items-center gap-2">
@@ -799,7 +803,7 @@ export default function Page() {
                               variant="outline"
                               role="combobox"
                               aria-expanded={numberPopoverOpen}
-                              className="w-full justify-between"
+                              className="w-full justify-between bg-transparent"
                               disabled={contacts.length === 0}
                             >
                               <div className="flex items-center gap-2">
@@ -916,7 +920,7 @@ export default function Page() {
 
                     {/* Image Upload */}
                     <div className="space-y-2">
-                      <Label>Upload Images (Max 5)</Label>
+                      <Label>Upload Images (Max {MAX_FILES})</Label>
                       <div
                         className={`border-2 ${isDragging ? "border-primary bg-primary/5" : "border-dashed"} rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors`}
                         onDragEnter={handleDragEnter}
@@ -938,13 +942,13 @@ export default function Page() {
                             {isDragging ? "Drop images here" : "Click or drag images here to upload"}
                           </span>
                           <span className="text-xs text-muted-foreground mt-1">
-                            {files.length}/5 images selected (images will be compressed)
+                            {files.length}/{MAX_FILES} images selected (images will be compressed)
                           </span>
                         </Label>
                       </div>
 
                       {previews.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 mt-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 mt-4">
                           {previews.map((preview, index) => (
                             <div key={index} className="relative group">
                               <div className="aspect-square rounded-md overflow-hidden border bg-muted">
