@@ -8,7 +8,6 @@ import {
   X,
   Send,
   FileSpreadsheet,
-  Search,
   User,
   Phone,
   History,
@@ -27,8 +26,6 @@ import { sendEmail } from "./actions"
 import { useToast } from "@/components/ui/use-toast"
 import * as XLSX from "xlsx"
 import imageCompression from "browser-image-compression"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import BatchUpload from "@/components/batch-upload"
 import EmailHistory from "@/components/email-history"
 import EmailTemplates, { type EmailTemplate } from "@/components/email-templates"
@@ -93,8 +90,6 @@ export default function Page() {
   const [previews, setPreviews] = useState<string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [contacts, setContacts] = useState<Contact[]>([])
-  const [namePopoverOpen, setNamePopoverOpen] = useState(false)
-  const [numberPopoverOpen, setNumberPopoverOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("name")
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const { toast } = useToast()
@@ -468,7 +463,6 @@ export default function Page() {
     setNameQuery(contact.NAME)
     setEmail(contact.EMAIL)
     setSelectedContact(contact)
-    setNamePopoverOpen(false)
   }
 
   // Function to select a contact from number search
@@ -476,7 +470,6 @@ export default function Page() {
     setNumberQuery(String(contact.NUMBER))
     setEmail(contact.EMAIL)
     setSelectedContact(contact)
-    setNumberPopoverOpen(false)
   }
 
   // Add these drag and drop handler functions before the return statement
@@ -746,103 +739,79 @@ export default function Page() {
                       {/* Search by Name */}
                       <TabsContent value="name" className="space-y-2">
                         <Label htmlFor="name-search">Search Contact by Name</Label>
-                        <Popover open={namePopoverOpen} onOpenChange={setNamePopoverOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={namePopoverOpen}
-                              className="w-full justify-between bg-transparent"
+                        <div className="relative">
+                          <div className="flex items-center space-x-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="name-search"
+                              type="text"
+                              placeholder="Type to search by name..."
+                              value={nameQuery}
+                              onChange={(e) => setNameQuery(e.target.value)}
                               disabled={contacts.length === 0}
-                            >
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                {nameQuery || "Search for a contact by name..."}
-                              </div>
-                              <Search className="h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0">
-                            <Command>
-                              <CommandInput
-                                placeholder="Search by name..."
-                                value={nameQuery}
-                                onValueChange={setNameQuery}
-                              />
-                              <CommandList>
-                                <CommandEmpty>No contacts found.</CommandEmpty>
-                                <CommandGroup>
-                                  {filteredByName.map((contact) => (
-                                    <CommandItem
-                                      key={`${contact.EMAIL}-${contact.NUMBER}`}
-                                      onSelect={() => selectContactByName(contact)}
-                                    >
-                                      <div className="flex flex-col">
-                                        <span>{contact.NAME}</span>
-                                        <div className="flex text-xs text-muted-foreground gap-2">
-                                          <span>{contact.EMAIL}</span>
-                                          <span>•</span>
-                                          <span>#{contact.NUMBER}</span>
-                                        </div>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                            />
+                          </div>
+                          {nameQuery && filteredByName.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                              {filteredByName.slice(0, 10).map((contact) => (
+                                <button
+                                  key={`${contact.EMAIL}-${contact.NUMBER}`}
+                                  type="button"
+                                  className="w-full px-3 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
+                                  onClick={() => selectContactByName(contact)}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">{contact.NAME}</span>
+                                    <div className="flex text-xs text-muted-foreground gap-2">
+                                      <span>{contact.EMAIL}</span>
+                                      <span>•</span>
+                                      <span>#{contact.NUMBER}</span>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </TabsContent>
 
                       {/* Search by Number */}
                       <TabsContent value="number" className="space-y-2">
                         <Label htmlFor="number-search">Search Contact by Number</Label>
-                        <Popover open={numberPopoverOpen} onOpenChange={setNumberPopoverOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={numberPopoverOpen}
-                              className="w-full justify-between bg-transparent"
+                        <div className="relative">
+                          <div className="flex items-center space-x-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="number-search"
+                              type="text"
+                              placeholder="Type to search by number..."
+                              value={numberQuery}
+                              onChange={(e) => setNumberQuery(e.target.value)}
                               disabled={contacts.length === 0}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4 text-muted-foreground" />
-                                {numberQuery || "Search for a contact by number..."}
-                              </div>
-                              <Search className="h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0">
-                            <Command>
-                              <CommandInput
-                                placeholder="Search by number..."
-                                value={numberQuery}
-                                onValueChange={setNumberQuery}
-                              />
-                              <CommandList>
-                                <CommandEmpty>No contacts found.</CommandEmpty>
-                                <CommandGroup>
-                                  {filteredByNumber.map((contact) => (
-                                    <CommandItem
-                                      key={`${contact.EMAIL}-${contact.NUMBER}`}
-                                      onSelect={() => selectContactByNumber(contact)}
-                                    >
-                                      <div className="flex flex-col">
-                                        <span>#{contact.NUMBER}</span>
-                                        <div className="flex text-xs text-muted-foreground gap-2">
-                                          <span>{contact.NAME}</span>
-                                          <span>•</span>
-                                          <span>{contact.EMAIL}</span>
-                                        </div>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
+                            />
+                          </div>
+                          {numberQuery && filteredByNumber.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                              {filteredByNumber.slice(0, 10).map((contact) => (
+                                <button
+                                  key={`${contact.EMAIL}-${contact.NUMBER}`}
+                                  type="button"
+                                  className="w-full px-3 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
+                                  onClick={() => selectContactByNumber(contact)}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">#{contact.NUMBER}</span>
+                                    <div className="flex text-xs text-muted-foreground gap-2">
+                                      <span>{contact.NAME}</span>
+                                      <span>•</span>
+                                      <span>{contact.EMAIL}</span>
+                                    </div>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </TabsContent>
                     </Tabs>
 
