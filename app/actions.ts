@@ -2,6 +2,7 @@
 
 import { put } from "@vercel/blob"
 import { v4 as uuidv4 } from "uuid"
+import nodemailer from "nodemailer" // Import nodemailer
 
 // Define response type for better type safety
 type SendEmailResponse = {
@@ -33,34 +34,57 @@ function createEmailContent(templateBody: string, contentHtml: string): string {
   }
 }
 
-// Helper function to send email via EmailJS or similar service
+// Helper function to send email via Nodemailer (Hostinger SMTP)
 async function sendEmailViaAPI(emailData: {
   to: string
   subject: string
   html: string
   from: string
-  attachments?: any[]
+  attachments?: { filename: string; content: Buffer; contentType: string }[] // Update attachment type
 }): Promise<any> {
-  // For now, let's simulate email sending and return success
-  // In a real implementation, you would integrate with a working email service
+  // Pastikan variabel lingkungan tersedia
+  if (!process.env.HOSTINGER_EMAIL || !process.env.HOSTINGER_PASSWORD) {
+    throw new Error("Hostinger email credentials are not set in environment variables.")
+  }
 
-  console.log("Email would be sent with data:", {
-    to: emailData.to,
-    subject: emailData.subject,
-    from: emailData.from,
-    hasAttachments: !!emailData.attachments,
-    attachmentCount: emailData.attachments?.length || 0,
+  // Buat transporter Nodemailer menggunakan SMTP Hostinger
+  const transporter = nodemailer.createTransport({
+    host: "smtp.hostinger.com", // Host SMTP Hostinger
+    port: 465, // Port SSL
+    secure: true, // Gunakan SSL
+    auth: {
+      user: process.env.HOSTINGER_EMAIL,
+      pass: process.env.HOSTINGER_PASSWORD,
+    },
   })
 
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 1000))
+  // Siapkan lampiran untuk Nodemailer
+  const nodemailerAttachments = emailData.attachments?.map((att) => ({
+    filename: att.filename,
+    content: att.content, // Nodemailer expects Buffer for content
+    contentType: att.contentType,
+  }))
 
-  // For demonstration, we'll return a success response
-  // Replace this with actual email service integration
-  return {
-    id: `email_${Date.now()}`,
-    status: "sent",
-    message: "Email sent successfully (simulated)",
+  // Kirim email
+  const mailOptions = {
+    from: emailData.from,
+    to: emailData.to,
+    subject: emailData.subject,
+    html: emailData.html,
+    attachments: nodemailerAttachments,
+  }
+
+  try {
+    const info = await transporter.sendMail(mailOptions)
+    console.log("Email sent: %s", info.messageId)
+    return {
+      id: info.messageId,
+      status: "sent",
+      message: "Email sent successfully",
+    }
+  } catch (error) {
+    console.error("Error sending email with Nodemailer:", error)
+    throw new Error(`Failed to send email: ${error instanceof Error ? error.message : "Unknown error"}`)
   }
 }
 
@@ -92,7 +116,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     })
 
     let contentHtml = ""
-    const attachments = []
+    const attachments: { filename: string; content: Buffer; contentType: string }[] = [] // Update type here
 
     if (useAttachments) {
       // Use attachments instead of Blob storage
@@ -105,12 +129,12 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         </div>
       `
 
-      // Prepare files as attachments (for future email service integration)
+      // Prepare files as attachments (for Nodemailer)
       for (const file of files) {
         const buffer = await file.arrayBuffer()
         attachments.push({
           filename: file.name,
-          content: Array.from(new Uint8Array(buffer)),
+          content: Buffer.from(buffer), // Convert ArrayBuffer to Buffer
           contentType: file.type,
         })
       }
@@ -180,7 +204,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         to: email,
         subject: templateSubject,
         html: htmlContent,
-        from: `${senderName} <noreply@sender.juhndaa.my.id>`,
+        from: `${senderName} <${process.env.HOSTINGER_EMAIL}>`, // Gunakan email Hostinger sebagai pengirim
         attachments: useAttachments ? attachments : undefined,
       }
 
