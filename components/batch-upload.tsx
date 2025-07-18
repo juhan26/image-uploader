@@ -60,7 +60,7 @@ export default function BatchUpload() {
   const { toast } = useToast()
   const [zipExtractionProgress, setZipExtractionProgress] = useState(0)
   const [extractingZip, setExtractingZip] = useState(false)
-  const [isSending, setIsSending] = useState(isSending)
+  const [isSending, setIsSending] = useState(false) // Initialize to false
   const [sendingProgress, setSendingProgress] = useState(0)
   const [useAttachments, setUseAttachments] = useState(true)
   const [templates, setTemplates] = useState<EmailTemplate[]>([])

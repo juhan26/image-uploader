@@ -624,8 +624,7 @@ export default function Page() {
                 </h1>
                 <p className="text-base sm:text-xl md:text-2xl text-white/90 mb-6 sm:mb-8">
                   Rejoignez notre mission pour aider les orphelins et faire une différence dans leur vie. Ensemble, nous
-                  pouvons apporter espoir et soutien à ceux qui en ont le leur vie. Ensemble, nous pouvons apporter
-                  espoir et soutien à ceux qui en ont le plus besoin.
+                  pouvons apporter espoir dan dukungan kepada mereka yang paling membutuhkan.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                   <Button onClick={scrollToApp} size="default" className="gap-2 w-full sm:w-auto">
@@ -751,27 +750,29 @@ export default function Page() {
                               disabled={contacts.length === 0}
                             />
                           </div>
-                          {nameQuery && filteredByName.length > 0 && (
-                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                              {filteredByName.slice(0, 10).map((contact) => (
-                                <button
-                                  key={`${contact.EMAIL}-${contact.NUMBER}`}
-                                  type="button"
-                                  className="w-full px-3 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
-                                  onClick={() => selectContactByName(contact)}
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">{contact.NAME}</span>
-                                    <div className="flex text-xs text-muted-foreground gap-2">
-                                      <span>{contact.EMAIL}</span>
-                                      <span>•</span>
-                                      <span>#{contact.NUMBER}</span>
-                                    </div>
+                          <div
+                            className={`absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto ${
+                              nameQuery && filteredByName.length > 0 ? "" : "hidden"
+                            }`}
+                          >
+                            {filteredByName.slice(0, 10).map((contact) => (
+                              <button
+                                key={`${contact.EMAIL}-${contact.NUMBER}`}
+                                type="button"
+                                className="w-full px-3 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
+                                onClick={() => selectContactByName(contact)}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{contact.NAME}</span>
+                                  <div className="flex text-xs text-muted-foreground gap-2">
+                                    <span>{contact.EMAIL}</span>
+                                    <span>•</span>
+                                    <span>#{contact.NUMBER}</span>
                                   </div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </TabsContent>
 
@@ -790,27 +791,29 @@ export default function Page() {
                               disabled={contacts.length === 0}
                             />
                           </div>
-                          {numberQuery && filteredByNumber.length > 0 && (
-                            <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                              {filteredByNumber.slice(0, 10).map((contact) => (
-                                <button
-                                  key={`${contact.EMAIL}-${contact.NUMBER}`}
-                                  type="button"
-                                  className="w-full px-3 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
-                                  onClick={() => selectContactByNumber(contact)}
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="font-medium">#{contact.NUMBER}</span>
-                                    <div className="flex text-xs text-muted-foreground gap-2">
-                                      <span>{contact.NAME}</span>
-                                      <span>•</span>
-                                      <span>{contact.EMAIL}</span>
-                                    </div>
+                          <div
+                            className={`absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto ${
+                              numberQuery && filteredByNumber.length > 0 ? "" : "hidden"
+                            }`}
+                          >
+                            {filteredByNumber.slice(0, 10).map((contact) => (
+                              <button
+                                key={`${contact.EMAIL}-${contact.NUMBER}`}
+                                type="button"
+                                className="w-full px-3 py-2 text-left hover:bg-muted focus:bg-muted focus:outline-none"
+                                onClick={() => selectContactByNumber(contact)}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="font-medium">#{contact.NUMBER}</span>
+                                  <div className="flex text-xs text-muted-foreground gap-2">
+                                    <span>{contact.NAME}</span>
+                                    <span>•</span>
+                                    <span>{contact.EMAIL}</span>
                                   </div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                                </div>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </TabsContent>
                     </Tabs>
