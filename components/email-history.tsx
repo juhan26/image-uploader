@@ -39,9 +39,12 @@ export default function EmailHistory() {
         // Sort by timestamp (newest first)
         parsedHistory.sort((a, b) => b.timestamp - a.timestamp)
         setHistory(parsedHistory)
+      } else {
+        setHistory([]) // Ensure history is an empty array if nothing in localStorage
       }
     } catch (error) {
       console.error("Error loading email history:", error)
+      setHistory([]) // Set to empty on error
     } finally {
       setIsLoading(false)
     }
@@ -69,6 +72,9 @@ export default function EmailHistory() {
     ) {
       setIsCleaningBlob(true)
       try {
+        // Endpoint clean-blob sudah dihapus, jadi ini akan gagal.
+        // Jika Anda ingin fungsionalitas ini kembali, kita perlu membuatnya lagi.
+        // Untuk saat ini, ini akan menghasilkan error jika dipanggil.
         const response = await fetch("/api/clean-blob")
         const data = await response.json()
 
@@ -88,7 +94,7 @@ export default function EmailHistory() {
         console.error("Error cleaning Blob storage:", error)
         toast({
           title: "Gagal membersihkan Blob storage",
-          description: "Terjadi kesalahan saat menghubungi server",
+          description: "Terjadi kesalahan saat menghubungi server atau endpoint tidak ditemukan.",
           variant: "destructive",
         })
       } finally {
@@ -110,17 +116,24 @@ export default function EmailHistory() {
           </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={loadHistory} className="text-xs">
+          <Button variant="outline" size="sm" onClick={loadHistory} className="text-xs bg-transparent">
             <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             Refresh
           </Button>
-          <Button variant="outline" size="sm" onClick={cleanBlobStorage} disabled={isCleaningBlob} className="text-xs">
+          {/* Tombol clean Blob storage dinonaktifkan karena endpoint sudah dihapus */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={cleanBlobStorage}
+            disabled={true}
+            className="text-xs bg-transparent"
+          >
             <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            {isCleaningBlob ? "Cleaning..." : <span className="hidden xs:inline">Bersihkan Blob</span>}
-            {!isCleaningBlob && <span className="xs:hidden">Blob</span>}
+            <span className="hidden xs:inline">Bersihkan Blob (Dinonaktifkan)</span>
+            <span className="xs:hidden">Blob (Off)</span>
           </Button>
           {history.length > 0 && (
-            <Button variant="outline" size="sm" onClick={clearHistory} className="text-xs">
+            <Button variant="outline" size="sm" onClick={clearHistory} className="text-xs bg-transparent">
               <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               <span className="hidden xs:inline">Hapus Riwayat</span>
               <span className="xs:hidden">Hapus</span>
@@ -130,17 +143,17 @@ export default function EmailHistory() {
       </CardHeader>
 
       <CardContent className="px-4 sm:px-6">
-        {isLoading ? (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-          </div>
-        ) : history.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
-            <p>Belum ada riwayat pengiriman email</p>
-          </div>
-        ) : (
-          <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[400px]">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+            </div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+              <p>Belum ada riwayat pengiriman email</p>
+            </div>
+          ) : (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -192,8 +205,8 @@ export default function EmailHistory() {
                 ))}
               </TableBody>
             </Table>
-          </ScrollArea>
-        )}
+          )}
+        </ScrollArea>
       </CardContent>
     </Card>
   )

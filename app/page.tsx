@@ -26,7 +26,6 @@ import { sendEmail } from "./actions"
 import { useToast } from "@/components/ui/use-toast"
 import * as XLSX from "xlsx"
 import imageCompression from "browser-image-compression"
-// import BatchUpload from "@/components/batch-upload" // Dihapus
 import EmailHistory from "@/components/email-history"
 import EmailTemplates, { type EmailTemplate } from "@/components/email-templates"
 
@@ -94,21 +93,17 @@ export default function Page() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const { toast } = useToast()
 
-  // Add these new state variables after the existing state declarations
   const [isDragging, setIsDragging] = useState(false)
   const [progress, setProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Tambahkan state baru untuk opsi pengiriman
-  const [useAttachments, setUseAttachments] = useState(true) // Default ke true karena Blob suspended
+  const [useAttachments, setUseAttachments] = useState(true)
 
-  // Tambahkan state untuk template email
   const [templates, setTemplates] = useState<EmailTemplate[]>([])
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("default")
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null)
 
-  // Konstanta untuk limit file
-  const MAX_FILES = 20 // Ubah dari 5 menjadi 20
+  const MAX_FILES = 20
 
   // Load templates from localStorage
   useEffect(() => {
@@ -119,21 +114,17 @@ export default function Page() {
         if (Array.isArray(parsedTemplates) && parsedTemplates.length > 0) {
           setTemplates(parsedTemplates)
 
-          // Set default template
           const defaultTemplate = parsedTemplates.find((t) => t.id === "default") || parsedTemplates[0]
           setSelectedTemplateId(defaultTemplate.id)
           setSelectedTemplate(defaultTemplate)
         } else {
-          // Create default template if parsed data is invalid
           createDefaultTemplate()
         }
       } else {
-        // Create default template if no saved templates
         createDefaultTemplate()
       }
     } catch (error) {
       console.error("Error loading templates:", error)
-      // Create default template on error
       createDefaultTemplate()
     }
   }, [])
@@ -184,7 +175,6 @@ export default function Page() {
   // Save email history to localStorage
   const saveEmailHistory = (historyItem: EmailHistoryItem) => {
     try {
-      // Get existing history
       const existingHistory = localStorage.getItem("emailSendingHistory")
       let history: EmailHistoryItem[] = []
 
@@ -192,15 +182,12 @@ export default function Page() {
         history = JSON.parse(existingHistory)
       }
 
-      // Add new item
       history.push(historyItem)
 
-      // Limit history to last 100 items
       if (history.length > 100) {
         history = history.slice(-100)
       }
 
-      // Save back to localStorage
       localStorage.setItem("emailSendingHistory", JSON.stringify(history))
     } catch (error) {
       console.error("Error saving email history:", error)
@@ -218,14 +205,11 @@ export default function Page() {
         const data = new Uint8Array(event.target?.result as ArrayBuffer)
         const workbook = XLSX.read(data, { type: "array" })
 
-        // Assume first sheet contains the data
         const firstSheetName = workbook.SheetNames[0]
         const worksheet = workbook.Sheets[firstSheetName]
 
-        // Convert to JSON
         const jsonData = XLSX.utils.sheet_to_json<Contact>(worksheet)
 
-        // Validate data has NAME, EMAIL, and NUMBER fields
         const validData = jsonData.filter(
           (item) =>
             "NUMBER" in item &&
@@ -258,7 +242,6 @@ export default function Page() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || [])
 
-    // Limit to MAX_FILES total
     if (files.length + selectedFiles.length > MAX_FILES) {
       toast({
         title: "Too many files",
@@ -268,30 +251,25 @@ export default function Page() {
       return
     }
 
-    // Compression options
     const options = {
-      maxSizeMB: 1, // Max file size in MB
-      maxWidthOrHeight: 1200, // Resize to this dimension (keeping aspect ratio)
-      useWebWorker: true, // Use web worker for better performance
-      fileType: "image/jpeg", // Convert all images to JPEG for better compression
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1200,
+      useWebWorker: true,
+      fileType: "image/jpeg",
     }
 
     try {
-      // Process each file with compression
       const processedFiles: File[] = []
       const newPreviews: string[] = []
 
       for (const file of selectedFiles) {
-        // Only compress image files
         if (file.type.startsWith("image/")) {
           const compressedFile = await imageCompression(file, options)
           processedFiles.push(compressedFile)
 
-          // Create preview URL
           const previewUrl = URL.createObjectURL(compressedFile)
           newPreviews.push(previewUrl)
         } else {
-          // For non-image files, keep as is
           processedFiles.push(file)
           const previewUrl = URL.createObjectURL(file)
           newPreviews.push(previewUrl)
@@ -351,7 +329,6 @@ export default function Page() {
       return
     }
 
-    // Prevent multiple submissions
     if (isSubmitting) {
       return
     }
@@ -363,29 +340,24 @@ export default function Page() {
       const formData = new FormData()
       formData.append("email", email)
 
-      // Add contact information if available
       if (selectedContact) {
         formData.append("contactNumber", String(selectedContact.NUMBER))
         formData.append("contactName", selectedContact.NAME)
       }
 
-      // Add template information
       formData.append("templateId", selectedTemplate.id)
       formData.append("templateSubject", selectedTemplate.subject)
       formData.append("templateBody", selectedTemplate.body)
-      formData.append("senderName", selectedTemplate.senderName || "NBD CHARITY") // Add sender name
+      formData.append("senderName", selectedTemplate.senderName || "NBD CHARITY")
 
-      // Add attachment option
       formData.append("useAttachments", useAttachments.toString())
 
-      // Add files
       files.forEach((file) => {
         formData.append("files", file)
       })
 
       setProgress(30)
 
-      // Send email with a delay to allow UI to update
       setTimeout(async () => {
         try {
           setProgress(50)
@@ -398,12 +370,10 @@ export default function Page() {
               description: `Images sent to ${email}`,
             })
 
-            // Save to history if historyItem is available
             if (result.historyItem) {
               saveEmailHistory(result.historyItem)
             }
 
-            // Reset form
             setEmail("")
             setFiles([])
             setPreviews([])
@@ -420,12 +390,10 @@ export default function Page() {
               variant: "destructive",
             })
 
-            // Show more detailed error if available
             if (result.errorDetails) {
               console.error("Detailed error:", result.errorDetails)
             }
 
-            // Save failed attempt to history
             if (result.historyItem) {
               saveEmailHistory(result.historyItem)
             }
@@ -438,7 +406,6 @@ export default function Page() {
             variant: "destructive",
           })
         } finally {
-          // Ensure we reset the submitting state
           setIsSubmitting(false)
         }
       }, 500)
@@ -447,31 +414,28 @@ export default function Page() {
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
+        variant: "destructive",
       })
       setIsSubmitting(false)
     }
   }
 
-  // Filter contacts based on search queries
   const filteredByName = contacts.filter((contact) => contact.NAME.toLowerCase().includes(nameQuery.toLowerCase()))
 
   const filteredByNumber = contacts.filter((contact) => String(contact.NUMBER).includes(numberQuery))
 
-  // Function to select a contact from name search
   const selectContactByName = (contact: Contact) => {
     setNameQuery(contact.NAME)
     setEmail(contact.EMAIL)
     setSelectedContact(contact)
   }
 
-  // Function to select a contact from number search
   const selectContactByNumber = (contact: Contact) => {
     setNumberQuery(String(contact.NUMBER))
     setEmail(contact.EMAIL)
     setSelectedContact(contact)
   }
 
-  // Add these drag and drop handler functions before the return statement
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     e.stopPropagation()
@@ -506,7 +470,6 @@ export default function Page() {
       return
     }
 
-    // Limit to MAX_FILES total
     if (files.length + droppedFiles.length > MAX_FILES) {
       toast({
         title: "Too many files",
@@ -516,7 +479,6 @@ export default function Page() {
       return
     }
 
-    // Compression options
     const options = {
       maxSizeMB: 1,
       maxWidthOrHeight: 1200,
@@ -525,7 +487,6 @@ export default function Page() {
     }
 
     try {
-      // Process each file with compression
       const processedFiles: File[] = []
       const newPreviews: string[] = []
 
@@ -533,7 +494,6 @@ export default function Page() {
         const compressedFile = await imageCompression(file, options)
         processedFiles.push(compressedFile)
 
-        // Create preview URL
         const previewUrl = URL.createObjectURL(compressedFile)
         newPreviews.push(previewUrl)
       }
@@ -555,7 +515,6 @@ export default function Page() {
     }
   }
 
-  // Function to scroll to app section
   const scrollToApp = () => {
     const appSection = document.getElementById("app-section")
     if (appSection) {
@@ -574,9 +533,9 @@ export default function Page() {
         <div className="absolute inset-0 z-0">
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('/placeholder.svg?height=1080&width=1920')" }} // Menggunakan placeholder
+            style={{ backgroundImage: "url('/placeholder.svg?height=1080&width=1920')" }}
           />
-          <div className="absolute inset-0 bg-black/60" /> {/* Black overlay with 60% opacity */}
+          <div className="absolute inset-0 bg-black/60" />
         </div>
 
         {/* Content */}
@@ -622,8 +581,8 @@ export default function Page() {
                   Nourris Un Orphelin
                 </h1>
                 <p className="text-base sm:text-xl md:text-2xl text-white/90 mb-6 sm:mb-8">
-                  Rejoignez notre mission pour aider les orphelins et faire une différence dans leur vie. Ensemble, nous
-                  pouvons apporter espoir dan dukungan kepada mereka yang paling membutuhkan.
+                  Rejoignez notre mission pour aider les orphelins dan membuat perbedaan dalam hidup mereka. Bersama,
+                  kita dapat membawa harapan dan dukungan kepada mereka yang paling membutuhkan.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
                   <Button onClick={scrollToApp} size="default" className="gap-2 w-full sm:w-auto">
@@ -657,7 +616,7 @@ export default function Page() {
                 <FeatureCard
                   icon={ImageIcon}
                   title="Envoi d'Images"
-                  description="Envoyez facilement des images aux bénéficiaires et aux donateurs pour menunjukkan dampak kontribusi mereka."
+                  description="Envoyez facilement des images aux bénéficiaires et aux donateurs untuk menunjukkan dampak kontribusi mereka."
                 />
                 <FeatureCard
                   icon={Users}
@@ -682,10 +641,7 @@ export default function Page() {
 
           <Tabs defaultValue="single" className="max-w-2xl mx-auto">
             <TabsList className="grid w-full grid-cols-3 text-xs sm:text-sm">
-              {" "}
-              {/* Ubah grid-cols-4 menjadi grid-cols-3 */}
               <TabsTrigger value="single">Single Email</TabsTrigger>
-              {/* <TabsTrigger value="batch">Batch Upload</TabsTrigger> */} {/* Dihapus */}
               <TabsTrigger value="templates">Templates</TabsTrigger>
               <TabsTrigger value="history">
                 <History className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -693,6 +649,7 @@ export default function Page() {
                 <span className="xs:hidden">History</span>
               </TabsTrigger>
             </TabsList>
+
             <TabsContent value="single">
               <Card>
                 <CardHeader className="px-4 sm:px-6">
@@ -819,7 +776,11 @@ export default function Page() {
                     </Tabs>
 
                     {/* Selected Contact Info */}
-                    <div className={`p-3 bg-muted rounded-md ${selectedContact ? "" : "hidden"}`}>
+                    <div
+                      className={`p-3 bg-muted rounded-md transition-all duration-300 ${
+                        selectedContact ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
+                      }`}
+                    >
                       <p className="text-sm font-medium">Selected Contact:</p>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="font-semibold">#{selectedContact?.NUMBER}</span>
@@ -918,8 +879,8 @@ export default function Page() {
                       </div>
 
                       <div
-                        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 mt-4 ${
-                          previews.length > 0 ? "" : "hidden"
+                        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 mt-4 transition-all duration-300 ${
+                          previews.length > 0 ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
                         }`}
                       >
                         {previews.map((preview, index) => (
@@ -942,7 +903,11 @@ export default function Page() {
                         ))}
                       </div>
                     </div>
-                    <div className={`mt-4 ${isSubmitting ? "" : "hidden"}`}>
+                    <div
+                      className={`mt-4 transition-all duration-300 ${
+                        isSubmitting ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
+                      }`}
+                    >
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
                         <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
                       </div>
@@ -972,12 +937,11 @@ export default function Page() {
                 </form>
               </Card>
             </TabsContent>
-            {/* <TabsContent value="batch"> */}
-            {/*   <BatchUpload /> */}
-            {/* </TabsContent> */} {/* Dihapus */}
+
             <TabsContent value="templates">
               <EmailTemplates />
             </TabsContent>
+
             <TabsContent value="history">
               <EmailHistory />
             </TabsContent>
