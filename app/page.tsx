@@ -621,7 +621,7 @@ export default function Page() {
                 <FeatureCard
                   icon={Users}
                   title="Gestion des Contacts"
-                  description="Importez et gérez facilement vos contacts pour une communication efficace avec les donateurs dan les bénéficiaires."
+                  description="Importez et gérez facilement vos contacts pour une communication efficace dengan para donatur dan penerima manfaat."
                 />
                 <FeatureCard
                   icon={FileText}
@@ -708,8 +708,10 @@ export default function Page() {
                             />
                           </div>
                           <div
-                            className={`absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto ${
-                              nameQuery && filteredByName.length > 0 ? "" : "hidden"
+                            className={`absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto transition-all duration-300 ${
+                              nameQuery && filteredByName.length > 0
+                                ? "opacity-100 h-auto pointer-events-auto"
+                                : "opacity-0 h-0 overflow-hidden pointer-events-none"
                             }`}
                           >
                             {filteredByName.slice(0, 10).map((contact) => (
@@ -749,8 +751,10 @@ export default function Page() {
                             />
                           </div>
                           <div
-                            className={`absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto ${
-                              numberQuery && filteredByNumber.length > 0 ? "" : "hidden"
+                            className={`absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto transition-all duration-300 ${
+                              numberQuery && filteredByNumber.length > 0
+                                ? "opacity-100 h-auto pointer-events-auto"
+                                : "opacity-0 h-0 overflow-hidden pointer-events-none"
                             }`}
                           >
                             {filteredByNumber.slice(0, 10).map((contact) => (
@@ -778,7 +782,7 @@ export default function Page() {
                     {/* Selected Contact Info */}
                     <div
                       className={`p-3 bg-muted rounded-md transition-all duration-300 ${
-                        selectedContact ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
+                        selectedContact ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden pointer-events-none"
                       }`}
                     >
                       <p className="text-sm font-medium">Selected Contact:</p>
@@ -880,7 +884,9 @@ export default function Page() {
 
                       <div
                         className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 mt-4 transition-all duration-300 ${
-                          previews.length > 0 ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
+                          previews.length > 0
+                            ? "opacity-100 h-auto pointer-events-auto"
+                            : "opacity-0 h-0 overflow-hidden pointer-events-none"
                         }`}
                       >
                         {previews.map((preview, index) => (
@@ -905,7 +911,7 @@ export default function Page() {
                     </div>
                     <div
                       className={`mt-4 transition-all duration-300 ${
-                        isSubmitting ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden"
+                        isSubmitting ? "opacity-100 h-auto" : "opacity-0 h-0 overflow-hidden pointer-events-none"
                       }`}
                     >
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
