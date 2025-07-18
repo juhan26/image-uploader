@@ -2,7 +2,11 @@
 
 import { put } from "@vercel/blob"
 import { v4 as uuidv4 } from "uuid"
-import nodemailer from "nodemailer" // Import nodemailer
+import nodemailer from "nodemailer"
+
+// Tambahkan konfigurasi runtime untuk memastikan Server Action berjalan di Node.js
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic" // Memastikan tidak ada optimasi statis yang mengganggu
 
 // Define response type for better type safety
 type SendEmailResponse = {
@@ -116,10 +120,9 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     })
 
     let contentHtml = ""
-    const attachments: { filename: string; content: Buffer; contentType: string }[] = [] // Update type here
+    const attachments: { filename: string; content: Buffer; contentType: string }[] = []
 
     if (useAttachments) {
-      // Use attachments instead of Blob storage
       console.log("Using attachments instead of Blob storage...")
 
       contentHtml = `
@@ -129,17 +132,17 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         </div>
       `
 
-      // Prepare files as attachments (for Nodemailer)
       for (const file of files) {
         const buffer = await file.arrayBuffer()
         attachments.push({
           filename: file.name,
-          content: Buffer.from(buffer), // Convert ArrayBuffer to Buffer
+          content: Buffer.from(buffer),
           contentType: file.type,
         })
       }
     } else {
-      // Use Blob storage
+      // This path should ideally not be hit if useAttachments is always true
+      // and Blob is not intended for use. However, keeping it for robustness.
       if (!process.env.BLOB_READ_WRITE_TOKEN) {
         console.error("Missing BLOB_READ_WRITE_TOKEN environment variable")
         return {
@@ -148,7 +151,6 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         }
       }
 
-      // Upload files to Vercel Blob
       console.log("Uploading files to Vercel Blob...")
       const uploadedFiles = []
 
@@ -175,7 +177,6 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
 
       console.log("Files uploaded successfully:", uploadedFiles.length, "files")
 
-      // Create HTML content with images
       contentHtml = `
         <div style="margin-top: 20px;">
           <p><strong>Your images:</strong></p>
@@ -193,10 +194,8 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
       `
     }
 
-    // Replace placeholder with content
     const htmlContent = createEmailContent(templateBody, contentHtml)
 
-    // Send email
     try {
       console.log("Sending email...")
 
@@ -204,14 +203,13 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         to: email,
         subject: templateSubject,
         html: htmlContent,
-        from: `${senderName} <${process.env.HOSTINGER_EMAIL}>`, // Gunakan email Hostinger sebagai pengirim
+        from: `${senderName} <${process.env.HOSTINGER_EMAIL}>`,
         attachments: useAttachments ? attachments : undefined,
       }
 
       const result = await sendEmailViaAPI(emailData)
       console.log("Email sent successfully:", result)
 
-      // Create history item
       const historyItem: EmailHistoryItem = {
         id: uuidv4(),
         email,
@@ -230,7 +228,6 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     } catch (emailError) {
       console.error("Error sending email:", emailError)
 
-      // Create failed history item
       const historyItem: EmailHistoryItem = {
         id: uuidv4(),
         email,
