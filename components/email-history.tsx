@@ -144,28 +144,34 @@ export default function EmailHistory() {
 
       <CardContent className="px-4 sm:px-6">
         <ScrollArea className="h-[400px]">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-            </div>
-          ) : history.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
-              <p>Belum ada riwayat pengiriman email</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[70px] sm:w-[100px] text-xs sm:text-sm">Status</TableHead>
+                <TableHead className="text-xs sm:text-sm">Penerima</TableHead>
+                <TableHead className="hidden sm:table-cell text-xs sm:text-sm">Kontak</TableHead>
+                <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Gambar</TableHead>
+                <TableHead className="w-[100px] sm:w-[150px] text-xs sm:text-sm">Waktu</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
                 <TableRow>
-                  <TableHead className="w-[70px] sm:w-[100px] text-xs sm:text-sm">Status</TableHead>
-                  <TableHead className="text-xs sm:text-sm">Penerima</TableHead>
-                  <TableHead className="hidden sm:table-cell text-xs sm:text-sm">Kontak</TableHead>
-                  <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Gambar</TableHead>
-                  <TableHead className="w-[100px] sm:w-[150px] text-xs sm:text-sm">Waktu</TableHead>
+                  <TableCell colSpan={5} className="text-center py-8">
+                    <div className="flex justify-center items-center">
+                      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {history.map((item) => (
+              ) : history.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                    <p>Belum ada riwayat pengiriman email</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                history.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       {item.status === "success" ? (
@@ -202,10 +208,10 @@ export default function EmailHistory() {
                       })}
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                ))
+              )}
+            </TableBody>
+          </Table>
         </ScrollArea>
       </CardContent>
     </Card>

@@ -189,14 +189,16 @@ export default function EmailTemplates() {
 
       <CardContent className="px-4 sm:px-6">
         <ScrollArea className="h-[300px]">
-          {templates.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Mail className="h-12 w-12 mx-auto mb-3 opacity-20" />
-              <p>No templates yet. Create your first template.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {templates.map((template) => (
+          <div className="space-y-4">
+            {" "}
+            {/* This div is always rendered */}
+            {templates.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Mail className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                <p>No templates yet. Create your first template.</p>
+              </div>
+            ) : (
+              templates.map((template) => (
                 <Card key={template.id} className="overflow-hidden">
                   <div className="p-4 bg-muted/30">
                     <div className="flex justify-between items-center">
@@ -227,9 +229,9 @@ export default function EmailTemplates() {
                     </div>
                   </div>
                 </Card>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </ScrollArea>
 
         {/* Template Edit Dialog - Using a simple modal instead of Dialog component */}
