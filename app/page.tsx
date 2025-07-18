@@ -26,7 +26,7 @@ import { sendEmail } from "./actions"
 import { useToast } from "@/components/ui/use-toast"
 import * as XLSX from "xlsx"
 import imageCompression from "browser-image-compression"
-import BatchUpload from "@/components/batch-upload"
+// import BatchUpload from "@/components/batch-upload" // Dihapus
 import EmailHistory from "@/components/email-history"
 import EmailTemplates, { type EmailTemplate } from "@/components/email-templates"
 
@@ -447,7 +447,6 @@ export default function Page() {
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
-        variant: "destructive",
       })
       setIsSubmitting(false)
     }
@@ -575,7 +574,7 @@ export default function Page() {
         <div className="absolute inset-0 z-0">
           <div
             className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: "url('/images/charity-background.jpeg')" }}
+            style={{ backgroundImage: "url('/placeholder.svg?height=1080&width=1920')" }} // Menggunakan placeholder
           />
           <div className="absolute inset-0 bg-black/60" /> {/* Black overlay with 60% opacity */}
         </div>
@@ -658,7 +657,7 @@ export default function Page() {
                 <FeatureCard
                   icon={ImageIcon}
                   title="Envoi d'Images"
-                  description="Envoyez facilement des images aux bénéficiaires et aux donateurs pour montrer l'impact de leurs contributions."
+                  description="Envoyez facilement des images aux bénéficiaires et aux donateurs pour menunjukkan dampak kontribusi mereka."
                 />
                 <FeatureCard
                   icon={Users}
@@ -682,9 +681,11 @@ export default function Page() {
           <h2 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">NBD CHARITY - Email Sender</h2>
 
           <Tabs defaultValue="single" className="max-w-2xl mx-auto">
-            <TabsList className="grid w-full grid-cols-4 text-xs sm:text-sm">
+            <TabsList className="grid w-full grid-cols-3 text-xs sm:text-sm">
+              {" "}
+              {/* Ubah grid-cols-4 menjadi grid-cols-3 */}
               <TabsTrigger value="single">Single Email</TabsTrigger>
-              <TabsTrigger value="batch">Batch Upload</TabsTrigger>
+              {/* <TabsTrigger value="batch">Batch Upload</TabsTrigger> */} {/* Dihapus */}
               <TabsTrigger value="templates">Templates</TabsTrigger>
               <TabsTrigger value="history">
                 <History className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -692,7 +693,6 @@ export default function Page() {
                 <span className="xs:hidden">History</span>
               </TabsTrigger>
             </TabsList>
-
             <TabsContent value="single">
               <Card>
                 <CardHeader className="px-4 sm:px-6">
@@ -972,15 +972,12 @@ export default function Page() {
                 </form>
               </Card>
             </TabsContent>
-
-            <TabsContent value="batch">
-              <BatchUpload />
-            </TabsContent>
-
+            {/* <TabsContent value="batch"> */}
+            {/*   <BatchUpload /> */}
+            {/* </TabsContent> */} {/* Dihapus */}
             <TabsContent value="templates">
               <EmailTemplates />
             </TabsContent>
-
             <TabsContent value="history">
               <EmailHistory />
             </TabsContent>
