@@ -4,9 +4,8 @@ import { put } from "@vercel/blob"
 import { v4 as uuidv4 } from "uuid"
 import nodemailer from "nodemailer"
 
-// Tambahkan konfigurasi runtime untuk memastikan Server Action berjalan di Node.js
-export const runtime = "nodejs"
-export const dynamic = "force-dynamic" // Memastikan tidak ada optimasi statis yang mengganggu
+// export const runtime = "nodejs" // Dihapus: Tidak diizinkan di file "use server"
+// export const dynamic = "force-dynamic" // Dihapus: Tidak diizinkan di file "use server"
 
 // Define response type for better type safety
 type SendEmailResponse = {
@@ -141,8 +140,6 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         })
       }
     } else {
-      // This path should ideally not be hit if useAttachments is always true
-      // and Blob is not intended for use. However, keeping it for robustness.
       if (!process.env.BLOB_READ_WRITE_TOKEN) {
         console.error("Missing BLOB_READ_WRITE_TOKEN environment variable")
         return {
