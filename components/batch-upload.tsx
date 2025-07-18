@@ -811,187 +811,134 @@ export default function BatchUpload() {
                 </Label>
               </div>
             )}
-
-            {extractingZip && (
-              <div className="mt-4 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">{processingStep}</span>
-                  <span className="text-sm text-muted-foreground">{zipExtractionProgress}%</span>
-                </div>
-                <Progress value={zipExtractionProgress} className="h-2" />
-              </div>
-            )}
           </div>
 
           {/* Processing Status */}
-          {(isProcessing || extractingZip || isSending) && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">{processingStep}</span>
-                <span className="text-sm text-muted-foreground">
-                  {extractingZip ? zipExtractionProgress : isSending ? sendingProgress : processingProgress}%
-                </span>
-              </div>
-              <Progress
-                value={extractingZip ? zipExtractionProgress : isSending ? sendingProgress : processingProgress}
-                className="h-2"
-              />
+          <div className={`space-y-2 ${isProcessing || extractingZip || isSending ? "" : "hidden"}`}>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium">{processingStep}</span>
+              <span className="text-sm text-muted-foreground">
+                {extractingZip ? zipExtractionProgress : isSending ? sendingProgress : processingProgress}%
+              </span>
             </div>
-          )}
-
-          {/* Results Section */}
-          {fileMappings.length > 0 && !isProcessing && !isSending && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Results</h3>
-                <div className="flex gap-2">
-                  <Badge variant="outline" className="bg-green-50">
-                    <Check className="h-3 w-3 mr-1 text-green-500" />
-                    {matchStats.matched} Matched
-                  </Badge>
-                  <Badge variant="outline" className="bg-amber-50">
-                    <AlertCircle className="h-3 w-3 mr-1 text-amber-500" />
-                    {matchStats.unmatched} Unmatched
-                  </Badge>
-                </div>
-              </div>
-
-              <Alert variant={matchStats.unmatched > 0 ? "warning" : "default"}>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Processing Complete</AlertTitle>
-                <AlertDescription>
-                  {matchStats.unmatched > 0
-                    ? `${matchStats.matched} files were matched with contact numbers, but ${matchStats.unmatched} files could not be matched.`
-                    : `All ${matchStats.matched} files were successfully matched with contact numbers.`}
-                </AlertDescription>
-              </Alert>
-
-              {/* Simple tabs for filteringg results */}
-              <div className="flex border rounded-md overflow-hidden mb-4">
-                <button
-                  className={`flex-1 py-2 px-4 text-sm font-medium ${
-                    activeTab === "all" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
-                  onClick={() => setActiveTab("all")}
-                >
-                  All Files ({matchStats.total})
-                </button>
-                <button
-                  className={`flex-1 py-2 px-4 text-sm font-medium ${
-                    activeTab === "matched" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
-                  onClick={() => setActiveTab("matched")}
-                >
-                  Matched ({matchStats.matched})
-                </button>
-                <button
-                  className={`flex-1 py-2 px-4 text-sm font-medium ${
-                    activeTab === "unmatched" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
-                  onClick={() => setActiveTab("unmatched")}
-                >
-                  Unmatched ({matchStats.unmatched})
-                </button>
-              </div>
-
-              <ScrollArea className="h-[300px] rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm">Preview</TableHead>
-                      <TableHead className="text-xs sm:text-sm">Original Filename</TableHead>
-                      <TableHead className="text-xs sm:text-sm">New Filename</TableHead>
-                      <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMappings.map((mapping, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          {mapping.preview ? (
-                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded overflow-hidden border">
-                              <img
-                                src={mapping.preview || "/placeholder.svg"}
-                                alt="Preview"
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded bg-muted flex items-center justify-center">
-                              <span className="text-xs text-muted-foreground">No preview</span>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
-                          {mapping.originalName}
-                        </TableCell>
-                        <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
-                          {mapping.newName}
-                        </TableCell>
-                        <TableCell>
-                          {mapping.matched ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] sm:text-xs">
-                              <Check className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
-                              <span className="hidden xs:inline">Matched</span>
-                              <span className="xs:hidden">✓</span>
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 text-[10px] sm:text-xs">
-                              <AlertCircle className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
-                              <span className="hidden xs:inline">Unmatched</span>
-                              <span className="xs:hidden">!</span>
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </div>
-          )}
-
-          {/* Template Selection */}
-          <div className="space-y-2 mt-4">
-            <Label htmlFor="batch-template-select">Email Template</Label>
-            <div className="relative">
-              <select
-                id="batch-template-select"
-                value={selectedTemplateId}
-                onChange={(e) => setSelectedTemplateId(e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                disabled={isSending}
-              >
-                {templates.map((template) => (
-                  <option key={template.id} value={template.id}>
-                    {template.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {selectedTemplate && <p className="text-xs text-muted-foreground">Subject: {selectedTemplate.subject}</p>}
+            <Progress
+              value={extractingZip ? zipExtractionProgress : isSending ? sendingProgress : processingProgress}
+              className="h-2"
+            />
           </div>
 
-          {/* Delivery Method */}
-          <div className="space-y-2">
-            <Label>Metode Pengiriman</Label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="batch-use-attachments"
-                checked={useAttachments}
-                onChange={(e) => setUseAttachments(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-              />
-              <Label htmlFor="batch-use-attachments" className="text-sm font-normal">
-                Kirim gambar sebagai lampiran email (direkomendasikan)
-              </Label>
+          {/* Results Section */}
+          <div
+            className={`space-y-4 ${
+              fileMappings.length > 0 && !isProcessing && !isSending && !extractingZip ? "" : "hidden"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium">Results</h3>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="bg-green-50">
+                  <Check className="h-3 w-3 mr-1 text-green-500" />
+                  {matchStats.matched} Matched
+                </Badge>
+                <Badge variant="outline" className="bg-amber-50">
+                  <AlertCircle className="h-3 w-3 mr-1 text-amber-500" />
+                  {matchStats.unmatched} Unmatched
+                </Badge>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {useAttachments
-                ? "Gambar akan dikirim sebagai lampiran email. Ukuran maksimum total: 10MB."
-                : "Gambar akan diunggah ke Vercel Blob dan ditampilkan dalam email."}
-            </p>
+
+            <Alert variant={matchStats.unmatched > 0 ? "warning" : "default"}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Processing Complete</AlertTitle>
+              <AlertDescription>
+                {matchStats.unmatched > 0
+                  ? `${matchStats.matched} files were matched with contact numbers, but ${matchStats.unmatched} files could not be matched.`
+                  : `All ${matchStats.matched} files were successfully matched with contact numbers.`}
+              </AlertDescription>
+            </Alert>
+
+            {/* Simple tabs for filteringg results */}
+            <div className="flex border rounded-md overflow-hidden mb-4">
+              <button
+                className={`flex-1 py-2 px-4 text-sm font-medium ${
+                  activeTab === "all" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+                onClick={() => setActiveTab("all")}
+              >
+                All Files ({matchStats.total})
+              </button>
+              <button
+                className={`flex-1 py-2 px-4 text-sm font-medium ${
+                  activeTab === "matched" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+                onClick={() => setActiveTab("matched")}
+              >
+                Matched ({matchStats.matched})
+              </button>
+              <button
+                className={`flex-1 py-2 px-4 text-sm font-medium ${
+                  activeTab === "unmatched" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}
+                onClick={() => setActiveTab("unmatched")}
+              >
+                Unmatched ({matchStats.unmatched})
+              </button>
+            </div>
+
+            <ScrollArea className="h-[300px] rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[60px] sm:w-[80px] text-xs sm:text-sm">Preview</TableHead>
+                    <TableHead className="text-xs sm:text-sm">Original Filename</TableHead>
+                    <TableHead className="text-xs sm:text-sm">New Filename</TableHead>
+                    <TableHead className="w-[80px] sm:w-[100px] text-xs sm:text-sm">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMappings.map((mapping, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        {mapping.preview ? (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded overflow-hidden border">
+                            <img
+                              src={mapping.preview || "/placeholder.svg"}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded bg-muted flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">No preview</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
+                        {mapping.originalName}
+                      </TableCell>
+                      <TableCell className="font-mono text-[10px] sm:text-xs truncate max-w-[100px] sm:max-w-none">
+                        {mapping.newName}
+                      </TableCell>
+                      <TableCell>
+                        {mapping.matched ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] sm:text-xs">
+                            <Check className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                            <span className="hidden xs:inline">Matched</span>
+                            <span className="xs:hidden">✓</span>
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 text-[10px] sm:text-xs">
+                            <AlertCircle className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                            <span className="hidden xs:inline">Unmatched</span>
+                            <span className="xs:hidden">!</span>
+                          </Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           </div>
         </CardContent>
 

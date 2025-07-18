@@ -663,7 +663,7 @@ export default function Page() {
                 <FeatureCard
                   icon={Users}
                   title="Gestion des Contacts"
-                  description="Importez et gérez facilement vos contacts pour une communication efficace avec les donateurs et les bénéficiaires."
+                  description="Importez et gérez facilement vos contacts pour une communication efficace avec les donateurs dan les bénéficiaires."
                 />
                 <FeatureCard
                   icon={FileText}
@@ -819,16 +819,14 @@ export default function Page() {
                     </Tabs>
 
                     {/* Selected Contact Info */}
-                    {selectedContact && (
-                      <div className="p-3 bg-muted rounded-md">
-                        <p className="text-sm font-medium">Selected Contact:</p>
-                        <div className="flex items-center gap-2 text-sm">
-                          <span className="font-semibold">#{selectedContact.NUMBER}</span>
-                          <span>-</span>
-                          <span>{selectedContact.NAME}</span>
-                        </div>
+                    <div className={`p-3 bg-muted rounded-md ${selectedContact ? "" : "hidden"}`}>
+                      <p className="text-sm font-medium">Selected Contact:</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold">#{selectedContact?.NUMBER}</span>
+                        <span>-</span>
+                        <span>{selectedContact?.NAME}</span>
                       </div>
-                    )}
+                    </div>
 
                     {/* Email Input */}
                     <div className="space-y-2">
@@ -919,37 +917,37 @@ export default function Page() {
                         </Label>
                       </div>
 
-                      {previews.length > 0 && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 mt-4">
-                          {previews.map((preview, index) => (
-                            <div key={index} className="relative group">
-                              <div className="aspect-square rounded-md overflow-hidden border bg-muted">
-                                <img
-                                  src={preview || "/placeholder.svg"}
-                                  alt={`Preview ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeFile(index)}
-                                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-sm opacity-90 hover:opacity-100"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
+                      <div
+                        className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-4 mt-4 ${
+                          previews.length > 0 ? "" : "hidden"
+                        }`}
+                      >
+                        {previews.map((preview, index) => (
+                          <div key={index} className="relative group">
+                            <div className="aspect-square rounded-md overflow-hidden border bg-muted">
+                              <img
+                                src={preview || "/placeholder.svg"}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {isSubmitting && (
-                      <div className="mt-4">
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">Sending email... {progress}%</p>
+                            <button
+                              type="button"
+                              onClick={() => removeFile(index)}
+                              className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-sm opacity-90 hover:opacity-100"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    )}
+                    </div>
+                    <div className={`mt-4 ${isSubmitting ? "" : "hidden"}`}>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${progress}%` }}></div>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">Sending email... {progress}%</p>
+                    </div>
                   </CardContent>
 
                   <CardFooter className="px-4 sm:px-6 pb-4 sm:pb-6">
