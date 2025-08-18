@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Upload, FileSpreadsheet, Search, Mail, Send } from "lucide-react"
+import { Upload, FileSpreadsheet, Search, Mail, Send, CheckCircle, AlertCircle } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface Contact {
@@ -27,37 +27,137 @@ export default function BulkSendPage() {
   const [subject, setSubject] = useState("NBD CHARITY")
   const [isUploading, setIsUploading] = useState(false)
   const [sendAsAttachment, setSendAsAttachment] = useState(true)
+  const [importStatus, setImportStatus] = useState<{
+    total: number
+    successful: number
+    failed: number
+    isImporting: boolean
+  }>({
+    total: 0,
+    successful: 0,
+    failed: 0,
+    isImporting: false,
+  })
 
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Simple CSV/Excel parsing (in real app, use a library like xlsx)
-    const text = await file.text()
-    const lines = text.split("\n")
-    const headers = lines[0].toLowerCase().split(",")
+    setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: true })
 
-    const numberIndex = headers.findIndex((h) => h.includes("number"))
-    const nameIndex = headers.findIndex((h) => h.includes("name"))
-    const emailIndex = headers.findIndex((h) => h.includes("email"))
+    try {
+      let text = ""
 
-    const parsedContacts: Contact[] = []
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",")
-      if (values.length >= 3) {
-        parsedContacts.push({
-          number: values[numberIndex]?.trim() || "",
-          name: values[nameIndex]?.trim() || "",
-          email: values[emailIndex]?.trim() || "",
+      // Handle different file types
+      if (file.name.endsWith(".csv") || file.type === "text/csv") {
+        text = await file.text()
+      } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+        // For Excel files, we'll try to read as text first (works for some Excel exports)
+        try {
+          text = await file.text()
+        } catch (error) {
+          toast({
+            title: "Excel File Error",
+            description: "Please save your Excel file as CSV format for better compatibility",
+            variant: "destructive",
+          })
+          setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
+          return
+        }
+      } else {
+        toast({
+          title: "Unsupported File Type",
+          description: "Please upload CSV or Excel files only",
+          variant: "destructive",
         })
+        setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
+        return
       }
-    }
 
-    setContacts(parsedContacts)
-    toast({
-      title: "Excel Imported",
-      description: `${parsedContacts.length} contacts imported successfully`,
-    })
+      // Parse the file content
+      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "")
+      if (lines.length < 2) {
+        toast({
+          title: "Invalid File",
+          description: "File must contain at least a header row and one data row",
+          variant: "destructive",
+        })
+        setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
+        return
+      }
+
+      // Parse headers (more flexible matching)
+      const headers = lines[0]
+        .toLowerCase()
+        .split(/[,;\t]/)
+        .map((h) => h.trim().replace(/['"]/g, ""))
+
+      const numberIndex = headers.findIndex(
+        (h) => h.includes("number") || h.includes("no") || h.includes("nomor") || h.includes("phone"),
+      )
+      const nameIndex = headers.findIndex((h) => h.includes("name") || h.includes("nama") || h.includes("full"))
+      const emailIndex = headers.findIndex((h) => h.includes("email") || h.includes("mail") || h.includes("e-mail"))
+
+      if (numberIndex === -1 || nameIndex === -1 || emailIndex === -1) {
+        toast({
+          title: "Invalid Headers",
+          description: "Excel file must contain columns for NUMBER/NO, NAME/NAMA, and EMAIL",
+          variant: "destructive",
+        })
+        setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
+        return
+      }
+
+      const parsedContacts: Contact[] = []
+      let successful = 0
+      let failed = 0
+
+      // Parse data rows
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(/[,;\t]/).map((v) => v.trim().replace(/['"]/g, ""))
+
+        if (values.length >= Math.max(numberIndex, nameIndex, emailIndex) + 1) {
+          const contact = {
+            number: values[numberIndex]?.trim() || "",
+            name: values[nameIndex]?.trim() || "",
+            email: values[emailIndex]?.trim() || "",
+          }
+
+          // Validate email format
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+          if (contact.name && contact.email && emailRegex.test(contact.email)) {
+            parsedContacts.push(contact)
+            successful++
+          } else {
+            failed++
+            console.log(`[v0] Skipped invalid contact at row ${i + 1}:`, contact)
+          }
+        } else {
+          failed++
+        }
+      }
+
+      setContacts(parsedContacts)
+      setImportStatus({
+        total: lines.length - 1,
+        successful,
+        failed,
+        isImporting: false,
+      })
+
+      toast({
+        title: "Import Complete",
+        description: `Successfully imported ${successful} contacts${failed > 0 ? `, ${failed} failed` : ""}`,
+      })
+    } catch (error) {
+      console.error("[v0] Excel import error:", error)
+      toast({
+        title: "Import Failed",
+        description: "Error reading file. Please check the file format and try again.",
+        variant: "destructive",
+      })
+      setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
+    }
   }
 
   const handleImageDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -176,28 +276,60 @@ export default function BulkSendPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileSpreadsheet className="w-5 h-5" />
-              Import Contacts (Excel)
+              Import Contacts (Excel/CSV)
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
               <FileSpreadsheet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-lg font-medium text-gray-700 mb-2">Import Excel with contacts</p>
-              <p className="text-sm text-gray-500 mb-4">(Excel file with 'NUMBER', 'NAME', and 'EMAIL' columns)</p>
+              <p className="text-lg font-medium text-gray-700 mb-2">Import Excel/CSV with contacts</p>
+              <p className="text-sm text-gray-500 mb-4">(File with 'NUMBER', 'NAME', and 'EMAIL' columns)</p>
               <input
                 type="file"
                 accept=".xlsx,.xls,.csv"
                 onChange={handleExcelUpload}
                 className="hidden"
                 id="excel-upload"
+                disabled={importStatus.isImporting}
               />
               <Label htmlFor="excel-upload" className="cursor-pointer">
-                <Button variant="outline" className="pointer-events-none bg-transparent">
+                <Button
+                  variant="outline"
+                  className="pointer-events-none bg-transparent"
+                  disabled={importStatus.isImporting}
+                >
                   <Upload className="w-4 h-4 mr-2" />
-                  Choose Excel File
+                  {importStatus.isImporting ? "Importing..." : "Choose Excel/CSV File"}
                 </Button>
               </Label>
             </div>
+
+            {(importStatus.total > 0 || contacts.length > 0) && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {importStatus.successful > 0 && (
+                      <div className="flex items-center gap-1 text-green-600">
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-sm font-medium">{importStatus.successful} imported</span>
+                      </div>
+                    )}
+                    {importStatus.failed > 0 && (
+                      <div className="flex items-center gap-1 text-red-600">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-sm font-medium">{importStatus.failed} failed</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    Total contacts: <span className="font-medium">{contacts.length}</span>
+                  </div>
+                </div>
+                {importStatus.failed > 0 && (
+                  <p className="text-xs text-gray-500 mt-2">Failed rows may have missing or invalid email addresses</p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -226,6 +358,10 @@ export default function BulkSendPage() {
                     onChange={(e) => setSearchNumber(e.target.value)}
                   />
                 </div>
+              </div>
+
+              <div className="mb-2 text-sm text-gray-600">
+                Showing {filteredContacts.length} of {contacts.length} contacts
               </div>
 
               {/* Contact List */}
