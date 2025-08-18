@@ -27,12 +27,12 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
           <UserInfo email={userEmail} />
         </div>
 
-        <div className="grid gap-8">
+        <div className="grid gap-4 sm:gap-8">
           <FileUploadZone />
           <ImageGallery />
         </div>

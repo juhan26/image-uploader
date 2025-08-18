@@ -109,38 +109,48 @@ export function ImageGallery() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="flex items-center gap-2">
               <ImageIcon className="h-5 w-5" />
-              Galeri Gambar ({files.length} file)
+              <span className="text-base sm:text-lg">Galeri Gambar ({files.length} file)</span>
             </CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {isSelectionMode && (
                 <>
-                  <Button variant="outline" size="sm" onClick={selectAllFiles}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={selectAllFiles}
+                    className="text-xs sm:text-sm bg-transparent"
+                  >
                     {selectedFiles.length === files.length ? "Batal Pilih Semua" : "Pilih Semua"}
                   </Button>
                   {selectedFiles.length > 0 && (
                     <ShareDialog
                       files={selectedFiles}
                       trigger={
-                        <Button size="sm">
-                          <Share2 className="h-4 w-4 mr-2" />
-                          Bagikan ({selectedFiles.length})
+                        <Button size="sm" className="text-xs sm:text-sm">
+                          <Share2 className="h-4 w-4 mr-1 sm:mr-2" />
+                          <span className="hidden xs:inline">Bagikan </span>({selectedFiles.length})
                         </Button>
                       }
                     />
                   )}
                 </>
               )}
-              <Button variant="outline" size="sm" onClick={toggleSelectionMode}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleSelectionMode}
+                className="text-xs sm:text-sm bg-transparent"
+              >
                 {isSelectionMode ? "Selesai" : "Pilih File"}
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {files.map((file, index) => (
               <Card key={index} className="overflow-hidden relative">
                 {isSelectionMode && (
@@ -148,7 +158,7 @@ export function ImageGallery() {
                     <Checkbox
                       checked={selectedFiles.some((f) => f.url === file.url)}
                       onCheckedChange={() => toggleFileSelection(file)}
-                      className="bg-white/90 border-2"
+                      className="bg-white/90 border-2 h-5 w-5"
                     />
                   </div>
                 )}
@@ -161,13 +171,13 @@ export function ImageGallery() {
                     loading="lazy"
                   />
                 </div>
-                <CardContent className="p-4">
-                  <div className="space-y-3">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="space-y-2 sm:space-y-3">
                     <div>
-                      <h4 className="font-medium text-sm truncate" title={file.name}>
+                      <h4 className="font-medium text-xs sm:text-sm truncate" title={file.name}>
                         {file.name}
                       </h4>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1 sm:gap-2 mt-1">
                         <Badge variant="secondary" className="text-xs">
                           {(file.size / 1024 / 1024).toFixed(2)} MB
                         </Badge>
@@ -180,20 +190,20 @@ export function ImageGallery() {
                     <div className="flex gap-1">
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="flex-1 bg-transparent">
+                          <Button variant="outline" size="sm" className="flex-1 bg-transparent min-h-[36px] text-xs">
                             <Eye className="h-3 w-3 mr-1" />
-                            Lihat
+                            <span className="hidden xs:inline">Lihat</span>
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl">
-                          <DialogHeader>
-                            <DialogTitle>{file.name}</DialogTitle>
+                        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] p-2 sm:p-6">
+                          <DialogHeader className="px-2 sm:px-0">
+                            <DialogTitle className="text-sm sm:text-base truncate">{file.name}</DialogTitle>
                           </DialogHeader>
-                          <div className="flex justify-center">
+                          <div className="flex justify-center overflow-hidden">
                             <img
                               src={file.url || "/placeholder.svg"}
                               alt={file.name}
-                              className="max-w-full max-h-[70vh] object-contain"
+                              className="max-w-full max-h-[60vh] sm:max-h-[70vh] object-contain"
                             />
                           </div>
                         </DialogContent>
@@ -202,13 +212,18 @@ export function ImageGallery() {
                       <ShareDialog
                         files={[file]}
                         trigger={
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" className="min-h-[36px] px-2 sm:px-3 bg-transparent">
                             <Share2 className="h-3 w-3" />
                           </Button>
                         }
                       />
 
-                      <Button variant="outline" size="sm" onClick={() => handleDownload(file)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownload(file)}
+                        className="min-h-[36px] px-2 sm:px-3"
+                      >
                         <Download className="h-3 w-3" />
                       </Button>
 
@@ -216,7 +231,7 @@ export function ImageGallery() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleDelete(file)}
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive min-h-[36px] px-2 sm:px-3"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
