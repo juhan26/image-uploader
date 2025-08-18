@@ -43,39 +43,39 @@ export default function BulkSendPage() {
     const file = event.target.files?.[0]
     if (!file) return
 
+    console.log("[v0] File selected:", file.name, file.type, file.size)
     setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: true })
 
     try {
       let text = ""
 
-      // Handle different file types
-      if (file.name.endsWith(".csv") || file.type === "text/csv") {
+      if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+        // For Excel files, we need to use a proper Excel parser
+        // Since we can't use external libraries, we'll ask user to save as CSV
+        toast({
+          title: "Excel File Detected",
+          description:
+            "Please save your Excel file as CSV format (.csv) for better compatibility. Go to File > Save As > CSV in Excel.",
+          variant: "destructive",
+        })
+        setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
+        return
+      } else if (file.name.endsWith(".csv") || file.type === "text/csv" || file.type === "application/vnd.ms-excel") {
         text = await file.text()
-      } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
-        // For Excel files, we'll try to read as text first (works for some Excel exports)
-        try {
-          text = await file.text()
-        } catch (error) {
-          toast({
-            title: "Excel File Error",
-            description: "Please save your Excel file as CSV format for better compatibility",
-            variant: "destructive",
-          })
-          setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
-          return
-        }
+        console.log("[v0] File content preview:", text.substring(0, 200))
       } else {
         toast({
           title: "Unsupported File Type",
-          description: "Please upload CSV or Excel files only",
+          description: "Please upload CSV files only. Save your Excel file as CSV format first.",
           variant: "destructive",
         })
         setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
         return
       }
 
-      // Parse the file content
       const lines = text.split(/\r?\n/).filter((line) => line.trim() !== "")
+      console.log("[v0] Total lines found:", lines.length)
+
       if (lines.length < 2) {
         toast({
           title: "Invalid File",
@@ -86,22 +86,38 @@ export default function BulkSendPage() {
         return
       }
 
-      // Parse headers (more flexible matching)
-      const headers = lines[0]
+      const firstLine = lines[0]
+      let delimiter = ","
+      if (firstLine.includes(";")) delimiter = ";"
+      else if (firstLine.includes("\t")) delimiter = "\t"
+
+      console.log("[v0] Using delimiter:", delimiter)
+      console.log("[v0] Header line:", firstLine)
+
+      // Parse headers with better cleaning
+      const headers = firstLine
         .toLowerCase()
-        .split(/[,;\t]/)
+        .split(delimiter)
         .map((h) => h.trim().replace(/['"]/g, ""))
 
+      console.log("[v0] Parsed headers:", headers)
+
       const numberIndex = headers.findIndex(
-        (h) => h.includes("number") || h.includes("no") || h.includes("nomor") || h.includes("phone"),
+        (h) => h.includes("number") || h.includes("no") || h.includes("nomor") || h === "a" || h.startsWith("num"),
       )
-      const nameIndex = headers.findIndex((h) => h.includes("name") || h.includes("nama") || h.includes("full"))
-      const emailIndex = headers.findIndex((h) => h.includes("email") || h.includes("mail") || h.includes("e-mail"))
+      const nameIndex = headers.findIndex(
+        (h) => h.includes("name") || h.includes("nama") || h === "b" || h.includes("full"),
+      )
+      const emailIndex = headers.findIndex(
+        (h) => h.includes("email") || h.includes("mail") || h === "c" || h.includes("e-mail"),
+      )
+
+      console.log("[v0] Column indices - Number:", numberIndex, "Name:", nameIndex, "Email:", emailIndex)
 
       if (numberIndex === -1 || nameIndex === -1 || emailIndex === -1) {
         toast({
           title: "Invalid Headers",
-          description: "Excel file must contain columns for NUMBER/NO, NAME/NAMA, and EMAIL",
+          description: `Headers found: ${headers.join(", ")}. Need columns for NUMBER, NAME, and EMAIL.`,
           variant: "destructive",
         })
         setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
@@ -114,7 +130,8 @@ export default function BulkSendPage() {
 
       // Parse data rows
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(/[,;\t]/).map((v) => v.trim().replace(/['"]/g, ""))
+        const values = lines[i].split(delimiter).map((v) => v.trim().replace(/['"]/g, ""))
+        console.log(`[v0] Row ${i}:`, values)
 
         if (values.length >= Math.max(numberIndex, nameIndex, emailIndex) + 1) {
           const contact = {
@@ -122,6 +139,8 @@ export default function BulkSendPage() {
             name: values[nameIndex]?.trim() || "",
             email: values[emailIndex]?.trim() || "",
           }
+
+          console.log(`[v0] Parsed contact ${i}:`, contact)
 
           // Validate email format
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -134,8 +153,11 @@ export default function BulkSendPage() {
           }
         } else {
           failed++
+          console.log(`[v0] Skipped row ${i + 1} - insufficient columns:`, values)
         }
       }
+
+      console.log("[v0] Final results - Successful:", successful, "Failed:", failed)
 
       setContacts(parsedContacts)
       setImportStatus({
@@ -153,7 +175,7 @@ export default function BulkSendPage() {
       console.error("[v0] Excel import error:", error)
       toast({
         title: "Import Failed",
-        description: "Error reading file. Please check the file format and try again.",
+        description: "Error reading file. Please save as CSV format and try again.",
         variant: "destructive",
       })
       setImportStatus({ total: 0, successful: 0, failed: 0, isImporting: false })
