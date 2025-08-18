@@ -172,7 +172,7 @@ export function ImageGallery() {
                           {(file.size / 1024 / 1024).toFixed(2)} MB
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {file.type.split("/")[1]?.toUpperCase()}
+                          {file.type ? file.type.split("/")[1]?.toUpperCase() : "FILE"}
                         </Badge>
                       </div>
                     </div>
