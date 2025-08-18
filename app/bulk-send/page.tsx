@@ -211,9 +211,27 @@ export default function BulkSendPage() {
     setImages((prev) => [...prev, ...files])
   }
 
-  const filteredContacts = contacts.filter(
-    (contact) => contact.name.toLowerCase().includes(searchTerm.toLowerCase()) || contact.number.includes(searchNumber),
-  )
+  const filteredContacts = contacts.filter((contact) => {
+    const nameMatch = searchTerm.trim() === "" || contact.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const numberMatch = searchNumber.trim() === "" || contact.number.includes(searchNumber)
+
+    // If both fields are empty, show all contacts
+    if (searchTerm.trim() === "" && searchNumber.trim() === "") {
+      return true
+    }
+
+    // If only one field is filled, search by that field only
+    if (searchTerm.trim() !== "" && searchNumber.trim() === "") {
+      return nameMatch
+    }
+
+    if (searchNumber.trim() !== "" && searchTerm.trim() === "") {
+      return numberMatch
+    }
+
+    // If both fields are filled, contact must match both criteria
+    return nameMatch && numberMatch
+  })
 
   const handleSendImages = async () => {
     if (!selectedContact) {
@@ -361,7 +379,7 @@ export default function BulkSendPage() {
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Search by Name</Label>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Search by Name (Optional)</Label>
                   <div className="relative">
                     <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
                     <Input
@@ -373,7 +391,7 @@ export default function BulkSendPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Search by Number</Label>
+                  <Label className="text-sm font-medium text-gray-700 mb-2 block">Search by Number (Optional)</Label>
                   <Input
                     placeholder="Search by number..."
                     value={searchNumber}
@@ -382,8 +400,30 @@ export default function BulkSendPage() {
                 </div>
               </div>
 
-              <div className="mb-2 text-sm text-gray-600">
-                Showing {filteredContacts.length} of {contacts.length} contacts
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm text-gray-600">
+                  Showing {filteredContacts.length} of {contacts.length} contacts
+                  {(searchTerm.trim() !== "" || searchNumber.trim() !== "") && (
+                    <span className="text-blue-600 ml-1">
+                      (filtered by {searchTerm.trim() !== "" ? "name" : ""}
+                      {searchTerm.trim() !== "" && searchNumber.trim() !== "" ? " and " : ""}
+                      {searchNumber.trim() !== "" ? "number" : ""})
+                    </span>
+                  )}
+                </div>
+                {(searchTerm.trim() !== "" || searchNumber.trim() !== "") && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm("")
+                      setSearchNumber("")
+                    }}
+                    className="text-xs"
+                  >
+                    Clear Search
+                  </Button>
+                )}
               </div>
 
               {/* Contact List */}
