@@ -1,37 +1,32 @@
 import type React from "react"
-import "@/app/globals.css"
-import { Inter } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import type { Metadata } from "next"
+import { GeistSans } from "geist/font/sans"
+import { GeistMono } from "geist/font/mono"
+import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
-
-export const metadata = {
-  title: "NBD CHARITY - Nourris Un Orphelin",
-  description: "Rejoignez notre mission pour aider les orphelins et faire une différence dans leur vie.",
-  metadataBase: new URL("https://sender.juhndaa.my.id"),
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
-    generator: 'v0.dev'
+export const metadata: Metadata = {
+  title: "CloudShare - File Sharing Platform",
+  description: "Professional file sharing platform like Google Drive",
+  generator: "v0.app",
 }
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode
-}) {
+}>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light">
-          {children}
-          <Toaster />
-        </ThemeProvider>
-      </body>
+      <head>
+        <style>{`
+html {
+  font-family: ${GeistSans.style.fontFamily};
+  --font-sans: ${GeistSans.variable};
+  --font-mono: ${GeistMono.variable};
+}
+        `}</style>
+      </head>
+      <body>{children}</body>
     </html>
   )
 }
