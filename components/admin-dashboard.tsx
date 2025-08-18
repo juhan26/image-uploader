@@ -1,11 +1,15 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Files, Share2, HardDrive, LogOut, Eye, Trash2, Download, Mail } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Users, Files, Share2, HardDrive, LogOut, Eye, Trash2, Download, Mail, Upload, Plus } from "lucide-react"
 
 interface AdminDashboardProps {
   onLogout: () => void
@@ -44,6 +48,11 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     totalShares: 0,
     totalStorage: 0,
   })
+  const [uploadForm, setUploadForm] = useState({
+    donorEmail: "",
+    files: [] as File[],
+  })
+  const [isUploading, setIsUploading] = useState(false)
 
   useEffect(() => {
     loadAdminData()
@@ -109,6 +118,64 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const handleLogout = () => {
     localStorage.removeItem("adminAuthenticated")
     onLogout()
+  }
+
+  const handleDonorPhotoUpload = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!uploadForm.donorEmail || uploadForm.files.length === 0) return
+
+    setIsUploading(true)
+
+    try {
+      const uploadedFiles = []
+
+      for (const file of uploadForm.files) {
+        const formData = new FormData()
+        formData.append("file", file)
+
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (response.ok) {
+          const { url } = await response.json()
+          uploadedFiles.push({
+            name: file.name,
+            url,
+            size: file.size,
+            uploadedAt: new Date().toISOString(),
+          })
+        }
+      }
+
+      // Save files to donor's account
+      const existingFiles = JSON.parse(localStorage.getItem(`files_${uploadForm.donorEmail}`) || "[]")
+      const updatedFiles = [...existingFiles, ...uploadedFiles]
+      localStorage.setItem(`files_${uploadForm.donorEmail}`, JSON.stringify(updatedFiles))
+
+      // Send email notification to donor
+      await fetch("/api/share-files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          files: uploadedFiles,
+          recipients: [uploadForm.donorEmail],
+          message: `Halo! Kami telah mengupload ${uploadedFiles.length} foto baru untuk Anda. Silakan login ke sistem untuk melihat foto-foto tersebut.`,
+          senderEmail: "admin@cloudshare.com",
+        }),
+      })
+
+      // Reset form and reload data
+      setUploadForm({ donorEmail: "", files: [] })
+      loadAdminData()
+      alert(`Berhasil mengupload ${uploadedFiles.length} foto untuk ${uploadForm.donorEmail}`)
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert("Gagal mengupload foto")
+    }
+
+    setIsUploading(false)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -194,12 +261,78 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs defaultValue="upload" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="upload">Upload Foto Donator</TabsTrigger>
             <TabsTrigger value="users">Pengguna</TabsTrigger>
             <TabsTrigger value="files">File</TabsTrigger>
             <TabsTrigger value="shares">Aktivitas Berbagi</TabsTrigger>
           </TabsList>
+
+          {/* Upload Tab */}
+          <TabsContent value="upload">
+            <Card>
+              <CardHeader>
+                <CardTitle>Upload Foto untuk Donator</CardTitle>
+                <CardDescription>Upload foto dan kirim otomatis ke email donator</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleDonorPhotoUpload} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="donorEmail">Email Donator</Label>
+                    <Input
+                      id="donorEmail"
+                      type="email"
+                      placeholder="donator@email.com"
+                      value={uploadForm.donorEmail}
+                      onChange={(e) => setUploadForm({ ...uploadForm, donorEmail: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="photos">Pilih Foto</Label>
+                    <Input
+                      id="photos"
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => setUploadForm({ ...uploadForm, files: Array.from(e.target.files || []) })}
+                      required
+                    />
+                    {uploadForm.files.length > 0 && (
+                      <p className="text-sm text-muted-foreground">{uploadForm.files.length} foto dipilih</p>
+                    )}
+                  </div>
+
+                  <Button type="submit" disabled={isUploading} className="w-full">
+                    {isUploading ? (
+                      <>
+                        <Upload className="h-4 w-4 mr-2 animate-spin" />
+                        Mengupload...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Upload & Kirim ke Donator
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                <div className="mt-6 p-4 bg-muted rounded-lg">
+                  <h4 className="font-medium mb-2">Cara Kerja:</h4>
+                  <ol className="text-sm text-muted-foreground space-y-1">
+                    <li>1. Masukkan email donator</li>
+                    <li>2. Pilih foto-foto yang ingin diupload</li>
+                    <li>3. Sistem akan mengupload foto dan menyimpannya ke akun donator</li>
+                    <li>4. Email notifikasi otomatis dikirim ke donator</li>
+                    <li>5. Donator bisa login dengan emailnya untuk melihat foto</li>
+                  </ol>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Users Tab */}
           <TabsContent value="users">
