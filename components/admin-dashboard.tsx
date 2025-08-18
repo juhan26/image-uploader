@@ -9,7 +9,22 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Users, Files, Share2, HardDrive, LogOut, Eye, Trash2, Download, Mail, Upload, Plus } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Users,
+  Files,
+  Share2,
+  HardDrive,
+  LogOut,
+  Eye,
+  Trash2,
+  Download,
+  Mail,
+  Upload,
+  Plus,
+  Edit,
+  FileText,
+} from "lucide-react"
 
 interface AdminDashboardProps {
   onLogout: () => void
@@ -38,6 +53,14 @@ interface ShareData {
   sharedAt: string
 }
 
+interface EmailTemplate {
+  id: string
+  name: string
+  subject: string
+  content: string
+  createdAt: string
+}
+
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [users, setUsers] = useState<UserData[]>([])
   const [allFiles, setAllFiles] = useState<FileData[]>([])
@@ -53,9 +76,17 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     files: [] as File[],
   })
   const [isUploading, setIsUploading] = useState(false)
+  const [templates, setTemplates] = useState<EmailTemplate[]>([])
+  const [templateForm, setTemplateForm] = useState({
+    name: "",
+    subject: "",
+    content: "",
+  })
+  const [editingTemplate, setEditingTemplate] = useState<string | null>(null)
 
   useEffect(() => {
     loadAdminData()
+    loadTemplates()
   }, [])
 
   const loadAdminData = () => {
@@ -115,6 +146,47 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     })
   }
 
+  const loadTemplates = () => {
+    const savedTemplates = localStorage.getItem("email_templates")
+    if (savedTemplates) {
+      setTemplates(JSON.parse(savedTemplates))
+    } else {
+      // Set default templates
+      const defaultTemplates: EmailTemplate[] = [
+        {
+          id: "default",
+          name: "Default Template",
+          subject: "NBD CHARITY - Foto Anda",
+          content: `Halo,
+
+Terima kasih atas dukungan Anda untuk NBD CHARITY.
+
+Kami telah mengupload foto-foto terbaru untuk Anda. Silakan login ke sistem untuk melihat foto-foto tersebut.
+
+Salam hangat,
+Tim NBD CHARITY`,
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: "donation",
+          name: "Donation Thank You",
+          subject: "Terima Kasih atas Donasi Anda",
+          content: `Halo,
+
+Terima kasih atas donasi yang telah Anda berikan untuk NBD CHARITY.
+
+Sebagai bentuk apresiasi, kami telah menyiapkan foto-foto kegiatan yang didukung oleh donasi Anda.
+
+Dengan hormat,
+Tim NBD CHARITY`,
+          createdAt: new Date().toISOString(),
+        },
+      ]
+      setTemplates(defaultTemplates)
+      localStorage.setItem("email_templates", JSON.stringify(defaultTemplates))
+    }
+  }
+
   const handleLogout = () => {
     localStorage.removeItem("adminAuthenticated")
     onLogout()
@@ -155,16 +227,20 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       localStorage.setItem(`files_${uploadForm.donorEmail}`, JSON.stringify(updatedFiles))
 
       // Send email notification to donor
-      await fetch("/api/share-files", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          files: uploadedFiles,
-          recipients: [uploadForm.donorEmail],
-          message: `Halo! Kami telah mengupload ${uploadedFiles.length} foto baru untuk Anda. Silakan login ke sistem untuk melihat foto-foto tersebut.`,
-          senderEmail: "admin@cloudshare.com",
-        }),
-      })
+      const template = templates.find((t) => t.id === "default")
+      if (template) {
+        await fetch("/api/share-files", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            files: uploadedFiles,
+            recipients: [uploadForm.donorEmail],
+            message: template.content.replace("{fileCount}", uploadedFiles.length.toString()),
+            senderEmail: "admin@cloudshare.com",
+            subject: template.subject,
+          }),
+        })
+      }
 
       // Reset form and reload data
       setUploadForm({ donorEmail: "", files: [] })
@@ -176,6 +252,61 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
 
     setIsUploading(false)
+  }
+
+  const handleSaveTemplate = () => {
+    if (!templateForm.name || !templateForm.subject || !templateForm.content) return
+
+    const newTemplate: EmailTemplate = {
+      id: editingTemplate || Date.now().toString(),
+      name: templateForm.name,
+      subject: templateForm.subject,
+      content: templateForm.content,
+      createdAt: editingTemplate
+        ? templates.find((t) => t.id === editingTemplate)?.createdAt || new Date().toISOString()
+        : new Date().toISOString(),
+    }
+
+    let updatedTemplates
+    if (editingTemplate) {
+      updatedTemplates = templates.map((t) => (t.id === editingTemplate ? newTemplate : t))
+    } else {
+      updatedTemplates = [...templates, newTemplate]
+    }
+
+    setTemplates(updatedTemplates)
+    localStorage.setItem("email_templates", JSON.stringify(updatedTemplates))
+
+    // Reset form
+    setTemplateForm({ name: "", subject: "", content: "" })
+    setEditingTemplate(null)
+  }
+
+  const handleEditTemplate = (template: EmailTemplate) => {
+    setTemplateForm({
+      name: template.name,
+      subject: template.subject,
+      content: template.content,
+    })
+    setEditingTemplate(template.id)
+  }
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (templateId === "default") {
+      alert("Template default tidak bisa dihapus")
+      return
+    }
+
+    if (confirm("Yakin ingin menghapus template ini?")) {
+      const updatedTemplates = templates.filter((t) => t.id !== templateId)
+      setTemplates(updatedTemplates)
+      localStorage.setItem("email_templates", JSON.stringify(updatedTemplates))
+    }
+  }
+
+  const cancelEdit = () => {
+    setTemplateForm({ name: "", subject: "", content: "" })
+    setEditingTemplate(null)
   }
 
   const formatFileSize = (bytes: number) => {
@@ -262,8 +393,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
         {/* Tabs */}
         <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="upload">Upload Foto Donator</TabsTrigger>
+            <TabsTrigger value="templates">Template Email</TabsTrigger>
             <TabsTrigger value="users">Pengguna</TabsTrigger>
             <TabsTrigger value="files">File</TabsTrigger>
             <TabsTrigger value="shares">Aktivitas Berbagi</TabsTrigger>
@@ -332,6 +464,136 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Email Templates Tab */}
+          <TabsContent value="templates">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Template Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>{editingTemplate ? "Edit Template" : "Buat Template Baru"}</CardTitle>
+                  <CardDescription>Buat atau edit template email untuk pengiriman foto</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="templateName">Nama Template</Label>
+                    <Input
+                      id="templateName"
+                      placeholder="Contoh: Template Donasi"
+                      value={templateForm.name}
+                      onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="templateSubject">Subject Email</Label>
+                    <Input
+                      id="templateSubject"
+                      placeholder="Contoh: NBD CHARITY - Foto Anda"
+                      value={templateForm.subject}
+                      onChange={(e) => setTemplateForm({ ...templateForm, subject: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="templateContent">Isi Email</Label>
+                    <Textarea
+                      id="templateContent"
+                      placeholder="Tulis isi email di sini..."
+                      rows={8}
+                      value={templateForm.content}
+                      onChange={(e) => setTemplateForm({ ...templateForm, content: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button onClick={handleSaveTemplate} className="flex-1">
+                      {editingTemplate ? (
+                        <>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Update Template
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Simpan Template
+                        </>
+                      )}
+                    </Button>
+                    {editingTemplate && (
+                      <Button variant="outline" onClick={cancelEdit}>
+                        Batal
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="mt-4 p-3 bg-muted rounded-lg">
+                    <h4 className="font-medium text-sm mb-2">Tips:</h4>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• Gunakan nama yang mudah diingat untuk template</li>
+                      <li>• Subject yang jelas akan meningkatkan open rate</li>
+                      <li>• Tulis pesan yang personal dan ramah</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Template List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Template Tersimpan</CardTitle>
+                  <CardDescription>Daftar semua template email yang tersedia</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {templates.map((template) => (
+                      <div key={template.id} className="p-4 border rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-medium">{template.name}</h4>
+                            <p className="text-sm text-muted-foreground mb-1">Subject: {template.subject}</p>
+                            <p className="text-xs text-muted-foreground">Dibuat: {formatDate(template.createdAt)}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="outline" size="sm" onClick={() => handleEditTemplate(template)}>
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            {template.id !== "default" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeleteTemplate(template.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+                          <p className="line-clamp-3">{template.content}</p>
+                        </div>
+
+                        {template.id === "default" && (
+                          <Badge variant="secondary" className="mt-2 text-xs">
+                            Template Default
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+
+                    {templates.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                        <p>Belum ada template tersimpan</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Users Tab */}
