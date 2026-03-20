@@ -409,7 +409,7 @@ type EmailHistoryItem = {
 type BulkItem = {
   id: string
   folderName: string
-  contact: Contact
+  contact: Contact | null
   files: File[]
   status: "idle" | "processing" | "sending" | "success" | "failed"
   error?: string
@@ -997,28 +997,33 @@ export default function Page() {
 
       // Match folders with contacts
       Object.values(groupedFiles).forEach((group) => {
-        // First try to match the whole folder name as a number
-        const folderNumber = group.folderName.trim()
-        let matchedContact = contacts.find((c) => String(c.NUMBER) === folderNumber)
+        // Extract all numeric sequences from the folder name (e.g., "406 - 692701968" -> ["406", "692701968"])
+        const numericSequences = group.folderName.match(/\d+/g) || []
 
-        // If no match found, try matching the prefix number (e.g., "1 - Juhan" -> 1)
-        if (!matchedContact) {
-          const match = group.folderName.match(/^(\d+)/)
-          if (match) {
-            const number = match[1]
-            matchedContact = contacts.find((c) => String(c.NUMBER) === number)
+        let matchedContact: Contact | null = null
+
+        // Try to match any of the numeric sequences against our contacts
+        for (const seq of numericSequences) {
+          const found = contacts.find((c) => String(c.NUMBER) === seq)
+          if (found) {
+            matchedContact = found
+            break
           }
         }
 
-        if (matchedContact) {
-          newBulkItems.push({
-            id: Math.random().toString(36).substr(2, 9),
-            folderName: group.folderName,
-            contact: matchedContact,
-            files: group.files,
-            status: "idle",
-          })
+        // If no match found by sequence, try matching the whole folder name as a fallback
+        if (!matchedContact) {
+          const folderNumber = group.folderName.trim()
+          matchedContact = contacts.find((c) => String(c.NUMBER) === folderNumber) || null
         }
+
+        newBulkItems.push({
+          id: Math.random().toString(36).substr(2, 9),
+          folderName: group.folderName,
+          contact: matchedContact,
+          files: group.files,
+          status: "idle",
+        })
       })
 
       if (Object.keys(groupedFiles).length === 0) {
@@ -1029,6 +1034,12 @@ export default function Page() {
         })
         return
       }
+
+      newBulkItems.sort((a, b) => {
+        const numA = a.contact ? Number(a.contact.NUMBER) : parseInt(a.folderName.match(/\d+/)?.[0] || "0", 10);
+        const numB = b.contact ? Number(b.contact.NUMBER) : parseInt(b.folderName.match(/\d+/)?.[0] || "0", 10);
+        return numA - numB;
+      });
 
       setBulkItems(newBulkItems)
 
@@ -1056,12 +1067,69 @@ export default function Page() {
     }
   }
 
+  const sendBulkItem = async (item: BulkItem) => {
+    if (!item.contact) {
+      setBulkItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "failed", error: "Kontak belum dipilih" } : i)))
+      return
+    }
+
+    if (!selectedTemplate) return
+
+    setBulkItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "sending", error: undefined } : i)))
+
+    try {
+      const formData = new FormData()
+      formData.append("email", item.contact.EMAIL)
+      formData.append("contactNumber", String(item.contact.NUMBER))
+      formData.append("contactName", item.contact.NAME)
+      formData.append("templateId", selectedTemplate.id)
+      formData.append("templateSubject", selectedTemplate.subject)
+      formData.append("templateBody", selectedTemplate.body)
+      formData.append("senderName", selectedTemplate.senderName || "NBD CHARITY")
+      formData.append("useAttachments", useAttachments.toString())
+
+      const options = { maxSizeMB: 1, maxWidthOrHeight: 1200, useWebWorker: true, fileType: "image/jpeg" }
+
+      for (const file of item.files) {
+        const compressedBlob = await imageCompression(file, options)
+        const compressedFile = new File([compressedBlob], file.name, { type: file.type, lastModified: file.lastModified })
+        formData.append("files", compressedFile)
+      }
+
+      const result = await sendEmail(formData)
+
+      if (result.success) {
+        setBulkItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "success" } : i)))
+        if (result.historyItem) saveEmailHistory(result.historyItem)
+      } else {
+        setBulkItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "failed", error: result.error } : i)))
+      }
+    } catch (error) {
+      console.error(`Error sending bulk item ${item.contact.NAME || "unknown"}:`, error)
+      setBulkItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "failed", error: error instanceof Error ? error.message : "Unknown error" } : i)))
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+  }
+
+  const handleResendSingle = async (item: BulkItem) => {
+    if (isBulkSending) return
+    if (!selectedTemplate) {
+      toast({ title: "Template required", description: "Please select an email template", variant: "destructive" })
+      return
+    }
+    // Set lock so startBulkSend cannot run concurrently
+    const originalBulkSending = isBulkSending
+    setIsBulkSending(true)
+    await sendBulkItem(item)
+    setIsBulkSending(originalBulkSending) // Restore previous state or false
+  }
+
   const startBulkSend = async () => {
     if (isBulkSending || bulkItems.length === 0 || !selectedTemplate) return
 
     setIsBulkSending(true)
 
-    // Filter only idle or failed items to process
     const itemsToProcess = bulkItems.filter((item) => item.status === "idle" || item.status === "failed")
 
     if (itemsToProcess.length === 0) {
@@ -1074,60 +1142,7 @@ export default function Page() {
     }
 
     for (const item of itemsToProcess) {
-      // Update item status to processing
-      setBulkItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "sending" } : i)))
-
-      try {
-        const formData = new FormData()
-        formData.append("email", item.contact.EMAIL)
-        formData.append("contactNumber", String(item.contact.NUMBER))
-        formData.append("contactName", item.contact.NAME)
-        formData.append("templateId", selectedTemplate.id)
-        formData.append("templateSubject", selectedTemplate.subject)
-        formData.append("templateBody", selectedTemplate.body)
-        formData.append("senderName", selectedTemplate.senderName || "NBD CHARITY")
-        formData.append("useAttachments", useAttachments.toString())
-
-        // Process and compress images
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1200,
-          useWebWorker: true,
-          fileType: "image/jpeg",
-        }
-
-        for (const file of item.files) {
-          const compressedBlob = await imageCompression(file, options)
-          const compressedFile = new File([compressedBlob], file.name, {
-            type: file.type,
-            lastModified: file.lastModified,
-          })
-          formData.append("files", compressedFile)
-        }
-
-        const result = await sendEmail(formData)
-
-        if (result.success) {
-          setBulkItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "success" } : i)))
-          if (result.historyItem) saveEmailHistory(result.historyItem)
-        } else {
-          setBulkItems((prev) =>
-            prev.map((i) => (i.id === item.id ? { ...i, status: "failed", error: result.error } : i)),
-          )
-        }
-      } catch (error) {
-        console.error(`Error sending bulk item ${item.contact.NAME}:`, error)
-        setBulkItems((prev) =>
-          prev.map((i) =>
-          (i.id === item.id
-            ? { ...i, status: "failed", error: error instanceof Error ? error.message : "Unknown error" }
-            : i),
-          ),
-        )
-      }
-
-      // Small delay between sends to be safe
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await sendBulkItem(item)
     }
 
     setIsBulkSending(false)
@@ -1706,11 +1721,38 @@ export default function Page() {
                       <div className="border rounded-xl divide-y max-h-96 overflow-auto bg-card shadow-sm">
                         {bulkItems.map((item) => (
                           <div key={item.id} className="p-4 flex items-center justify-between gap-4 hover:bg-muted/30 transition-colors">
-                            <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="flex items-center gap-3 overflow-hidden w-full">
                               <Archive className="h-5 w-5 text-primary flex-shrink-0" />
-                              <div className="flex flex-col min-w-0">
+                              <div className="flex flex-col min-w-0 w-full">
                                 <span className="font-semibold text-sm truncate">{item.folderName}</span>
-                                <span className="text-xs text-muted-foreground truncate">{item.contact.EMAIL} • {item.files.length} {t.app.sections.bulk.images}</span>
+                                {item.contact ? (
+                                  <span className="text-xs text-muted-foreground truncate">{item.contact.EMAIL} • {item.files.length} {t.app.sections.bulk.images}</span>
+                                ) : (
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-xs text-destructive font-semibold">Kontak Tidak Ditemukan</span>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" className="h-6 px-2 text-xs py-0">Pilih Kontak</Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent className="max-h-60 overflow-auto">
+                                        {contacts.length > 0 ? (
+                                          contacts.map((c) => (
+                                            <DropdownMenuItem key={c.EMAIL} onClick={() => {
+                                              setBulkItems(prev => prev.map(i => i.id === item.id ? { ...i, contact: c } : i))
+                                            }} className="focus:bg-primary/20 cursor-pointer">
+                                              <div className="flex flex-col">
+                                                <span className="font-medium text-xs">{c.NAME}</span>
+                                                <span className="text-xs text-muted-foreground">{c.EMAIL}</span>
+                                              </div>
+                                            </DropdownMenuItem>
+                                          ))
+                                        ) : (
+                                          <div className="p-2 text-xs text-center text-muted-foreground">Belum ada kontak</div>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -1728,9 +1770,20 @@ export default function Page() {
                                 </div>
                               )}
                               {item.status === "failed" && (
-                                <div className="flex items-center gap-2 text-destructive font-bold text-xs uppercase tracking-wider">
-                                  <AlertCircle className="h-3 w-3" />
-                                  {t.app.sections.bulk.failed}
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 text-destructive font-bold text-xs uppercase tracking-wider">
+                                    <AlertCircle className="h-3 w-3" />
+                                    {t.app.sections.bulk.failed}
+                                  </div>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="h-6 px-1.5 text-xs py-0" 
+                                    onClick={() => handleResendSingle(item)}
+                                    disabled={isBulkSending}
+                                  >
+                                    Kirim Ulang
+                                  </Button>
                                 </div>
                               )}
                               {item.status === "idle" && (
