@@ -25,6 +25,7 @@
     "@radix-ui/react-tabs": "latest",
     "@radix-ui/react-toast": "^1.1.5",
     "@vercel/blob": "latest",
+    "@zip.js/zip.js": "^2.8.26",
     "browser-image-compression": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

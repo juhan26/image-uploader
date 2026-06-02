@@ -82,17 +82,17 @@ const dictionary = {
         selected: "Kontak terpilih",
       },
       upload: {
-        title: "Unggah Foto",
-        dragDrop: "Seret dan lepas foto di sini",
+        title: "Unggah Foto/Video",
+        dragDrop: "Seret dan lepas foto/video di sini",
         or: "atau",
         browse: "Pilih File",
-        dropActive: "Letakkan gambar di sini",
-        selectedHint: "gambar dipilih (akan dikompresi)",
+        dropActive: "Letakkan gambar/video di sini",
+        selectedHint: "file dipilih (gambar akan dikompresi)",
       },
       sections: {
         single: {
-          title: "Kirim Gambar via Email",
-          description: "Unggah hingga {max} gambar dan kirim ke alamat email mana pun",
+          title: "Kirim Gambar/Video via Email",
+          description: "Unggah hingga {max} file gambar/video dan kirim ke alamat email mana pun",
           importLabel: "Impor Kontak (Excel)",
           importHint: "Impor Excel dengan kontak (Kolom: NUMBER, NAME, EMAIL)",
           importStatus: "kontak terimpor",
@@ -103,15 +103,15 @@ const dictionary = {
           emailLabel: "Alamat Email",
           templateLabel: "Template Email",
           methodLabel: "Metode Pengiriman",
-          attachmentLabel: "Kirim gambar sebagai lampiran email (direkomendasikan)",
-          attachmentHint: "Gambar akan dikirim sebagai lampiran. Maks 10MB.",
-          uploadLabel: "Unggah Gambar",
-          uploadHint: "Klik atau seret gambar ke sini untuk mengunggah",
-          sendButton: "Kirim Gambar",
+          attachmentLabel: "Kirim media sebagai lampiran email (direkomendasikan)",
+          attachmentHint: "File akan dikirim sebagai lampiran. Maks 10MB.",
+          uploadLabel: "Unggah Gambar/Video",
+          uploadHint: "Klik atau seret gambar/video ke sini untuk mengunggah",
+          sendButton: "Kirim Media",
           sending: "Mengirim...",
           sendingProgress: "Mengirim email...",
           selectedContact: "Kontak Terpilih:",
-          methodHint: "Gambar akan diunggah ke cloud dan ditampilkan dalam email.",
+          methodHint: "Gambar/Video akan diunggah ke cloud dan ditampilkan dalam email.",
         },
         bulk: {
           title: "Unggah Massal (ZIP)",
@@ -184,17 +184,17 @@ const dictionary = {
         selected: "Selected contact",
       },
       upload: {
-        title: "Upload Photos",
-        dragDrop: "Drag and drop photos here",
+        title: "Upload Photos/Videos",
+        dragDrop: "Drag and drop photos/videos here",
         or: "or",
         browse: "Choose Files",
-        dropActive: "Drop images here",
-        selectedHint: "images selected (will be compressed)",
+        dropActive: "Drop images/videos here",
+        selectedHint: "files selected (images will be compressed)",
       },
       sections: {
         single: {
-          title: "Send Images via Email",
-          description: "Upload up to {max} images and send to any email address",
+          title: "Send Images/Videos via Email",
+          description: "Upload up to {max} images/videos and send to any email address",
           importLabel: "Import Contacts (Excel)",
           importHint: "Import Excel with contacts (Columns: NUMBER, NAME, EMAIL)",
           importStatus: "contacts imported",
@@ -205,15 +205,15 @@ const dictionary = {
           emailLabel: "Email Address",
           templateLabel: "Email Template",
           methodLabel: "Delivery Method",
-          attachmentLabel: "Send images as email attachments (recommended)",
-          attachmentHint: "Images will be sent as attachments. Max 10MB.",
-          uploadLabel: "Upload Images",
-          uploadHint: "Click or drag images here to upload",
-          sendButton: "Send Images",
+          attachmentLabel: "Send media as email attachments (recommended)",
+          attachmentHint: "Files will be sent as attachments. Max 10MB.",
+          uploadLabel: "Upload Images/Videos",
+          uploadHint: "Click or drag images/videos here to upload",
+          sendButton: "Send Media",
           sending: "Sending...",
           sendingProgress: "Sending email...",
           selectedContact: "Selected Contact:",
-          methodHint: "Images will be uploaded to the cloud and displayed in the email.",
+          methodHint: "Images/Videos will be uploaded to the cloud and displayed in the email.",
         },
         bulk: {
           title: "Bulk Upload (ZIP)",
@@ -286,17 +286,17 @@ const dictionary = {
         selected: "Contact sélectionné",
       },
       upload: {
-        title: "Télécharger des photos",
-        dragDrop: "Faites glisser et déposez des photos ici",
+        title: "Télécharger des photos/vidéos",
+        dragDrop: "Faites glisser et déposez des photos/vidéos ici",
         or: "ou",
         browse: "Parcourir les fichiers",
-        dropActive: "Déposez les images ici",
-        selectedHint: "images sélectionnées (seront compressées)",
+        dropActive: "Déposez les images/vidéos ici",
+        selectedHint: "fichiers sélectionnés (les images seront compressées)",
       },
       sections: {
         single: {
-          title: "Envoyer des images par e-mail",
-          description: "Téléchargez jusqu'à {max} images et envoyez-les à n'importe quelle adresse e-mail",
+          title: "Envoyer des images/vidéos par e-mail",
+          description: "Téléchargez jusqu'à {max} images/vidéos et envoyez-les à n'importe quelle adresse e-mail",
           importLabel: "Importer des contacts (Excel)",
           importHint: "Importer un Excel avec des contacts (Colonnes : NUMBER, NAME, EMAIL)",
           importStatus: "contacts importés",
@@ -307,15 +307,15 @@ const dictionary = {
           emailLabel: "Adresse e-mail",
           templateLabel: "Modèle d'e-mail",
           methodLabel: "Méthode de livraison",
-          attachmentLabel: "Envoyer des images en tant que pièces jointes (recommandé)",
-          attachmentHint: "Les images seront envoyées en pièces jointes. Max 10 Mo.",
-          uploadLabel: "Télécharger des images",
-          uploadHint: "Cliquez ou faites glisser des images ici pour les télécharger",
-          sendButton: "Envoyer les images",
+          attachmentLabel: "Envoyer les médias en tant que pièces jointes (recommandé)",
+          attachmentHint: "Les fichiers seront envoyés en pièces jointes. Max 10 Mo.",
+          uploadLabel: "Télécharger des images/vidéos",
+          uploadHint: "Cliquez ou faites glisser des images/vidéos ici pour les télécharger",
+          sendButton: "Envoyer les médias",
           sending: "Envoi...",
           sendingProgress: "Envoi de l'e-mail...",
           selectedContact: "Contact Sélectionné:",
-          methodHint: "Les images seront téléchargées sur le cloud et affichées dans l'e-mail.",
+          methodHint: "Les images/vidéos seront téléchargées sur le cloud et affichées dans l'e-mail.",
         },
         bulk: {
           title: "Envoi groupé (ZIP)",
@@ -618,7 +618,7 @@ export default function Page() {
     if (files.length + selectedFiles.length > MAX_FILES) {
       toast({
         title: "Too many files",
-        description: `You can only upload a maximum of ${MAX_FILES} images`,
+        description: `You can only upload a maximum of ${MAX_FILES} files`,
         variant: "destructive",
       })
       return
@@ -657,14 +657,14 @@ export default function Page() {
       setPreviews((prev) => [...prev, ...newPreviews])
 
       toast({
-        title: "Images compressed",
-        description: `${processedFiles.length} images processed and ready to send`,
+        title: "Files processed",
+        description: `${processedFiles.length} file(s) processed and ready to send`,
       })
     } catch (error) {
-      console.error("Error compressing images:", error)
+      console.error("Error processing files:", error)
       toast({
-        title: "Compression failed",
-        description: "Could not compress the images. Please try again.",
+        title: "Processing failed",
+        description: "Could not process the files. Please try again.",
         variant: "destructive",
       })
     }
@@ -682,7 +682,7 @@ export default function Page() {
     if (files.length === 0) {
       toast({
         title: "No files selected",
-        description: "Please select at least one image to send",
+        description: "Please select at least one file to send",
         variant: "destructive",
       })
       return
@@ -744,7 +744,7 @@ export default function Page() {
           if (result.success) {
             toast({
               title: "Success!",
-              description: `Images sent to ${email}`,
+              description: `Media sent to ${email}`,
             })
 
             if (result.historyItem) {
@@ -763,7 +763,7 @@ export default function Page() {
           } else {
             toast({
               title: "Error",
-              description: result.error || "Failed to send images",
+              description: result.error || "Failed to send media",
               variant: "destructive",
             })
 
@@ -836,12 +836,14 @@ export default function Page() {
     e.stopPropagation()
     setIsDragging(false)
 
-    const droppedFiles = Array.from(e.dataTransfer.files).filter((file) => file.type.startsWith("image/"))
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(
+      (file) => file.type.startsWith("image/") || file.type.startsWith("video/")
+    )
 
     if (droppedFiles.length === 0) {
       toast({
-        title: "No valid images",
-        description: "Please drop image files only",
+        title: "No valid files",
+        description: "Please drop image or video files only",
         variant: "destructive",
       })
       return
@@ -850,7 +852,7 @@ export default function Page() {
     if (files.length + droppedFiles.length > MAX_FILES) {
       toast({
         title: "Too many files",
-        description: `You can only upload a maximum of ${MAX_FILES} images`,
+        description: `You can only upload a maximum of ${MAX_FILES} files`,
         variant: "destructive",
       })
       return
@@ -868,29 +870,35 @@ export default function Page() {
       const newPreviews: string[] = []
 
       for (const file of droppedFiles) {
-        const compressedBlob = await imageCompression(file, options)
-        const compressedFile = new File([compressedBlob], file.name, {
-          type: file.type,
-          lastModified: file.lastModified,
-        })
-        processedFiles.push(compressedFile)
+        if (file.type.startsWith("image/")) {
+          const compressedBlob = await imageCompression(file, options)
+          const compressedFile = new File([compressedBlob], file.name, {
+            type: file.type,
+            lastModified: file.lastModified,
+          })
+          processedFiles.push(compressedFile)
 
-        const previewUrl = URL.createObjectURL(compressedFile)
-        newPreviews.push(previewUrl)
+          const previewUrl = URL.createObjectURL(compressedFile)
+          newPreviews.push(previewUrl)
+        } else {
+          processedFiles.push(file)
+          const previewUrl = URL.createObjectURL(file)
+          newPreviews.push(previewUrl)
+        }
       }
 
       setFiles((prev) => [...prev, ...processedFiles])
       setPreviews((prev) => [...prev, ...newPreviews])
 
       toast({
-        title: "Images compressed",
-        description: `${processedFiles.length} images processed and ready to send`,
+        title: "Files processed",
+        description: `${processedFiles.length} file(s) processed and ready to send`,
       })
     } catch (error) {
-      console.error("Error compressing images:", error)
+      console.error("Error processing files:", error)
       toast({
-        title: "Compression failed",
-        description: "Could not compress the images. Please try again.",
+        title: "Processing failed",
+        description: "Could not process the files. Please try again.",
         variant: "destructive",
       })
     }
@@ -1550,7 +1558,7 @@ export default function Page() {
                             <Input
                               id="file-upload"
                               type="file"
-                              accept="image/*"
+                              accept="image/*,video/*"
                               multiple
                               className="hidden"
                               onChange={handleFileChange}
@@ -1574,17 +1582,33 @@ export default function Page() {
                           >
                             {previews.map((preview, index) => (
                               <div key={index} className="relative group">
-                                <div className="aspect-square rounded-md overflow-hidden border bg-muted">
-                                  <img
-                                    src={preview || "/placeholder.svg"}
-                                    alt={`Preview ${index + 1}`}
-                                    className="w-full h-full object-cover"
-                                  />
+                                <div className="aspect-square rounded-md overflow-hidden border bg-muted relative">
+                                  {files[index]?.type.startsWith("video/") ? (
+                                    <div className="relative w-full h-full">
+                                      <video
+                                        src={preview}
+                                        className="w-full h-full object-cover"
+                                        muted
+                                        playsInline
+                                      />
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/35">
+                                        <div className="bg-black/60 backdrop-blur-md text-white rounded-full p-2.5 shadow-md">
+                                          <Play className="h-4 w-4 fill-current" />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <img
+                                      src={preview || "/placeholder.svg"}
+                                      alt={`Preview ${index + 1}`}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  )}
                                 </div>
                                 <button
                                   type="button"
                                   onClick={() => removeFile(index)}
-                                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-sm opacity-90 hover:opacity-100"
+                                  className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-sm opacity-90 hover:opacity-100 z-10"
                                 >
                                   <X className="h-4 w-4" />
                                 </button>

@@ -121,13 +121,28 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     let contentHtml = ""
     const attachments: { filename: string; content: Buffer; contentType: string }[] = []
 
+    const imageCount = files.filter((f) => f.type.startsWith("image/")).length
+    const videoCount = files.filter((f) => f.type.startsWith("video/")).length
+    const totalCount = files.length
+
     if (useAttachments) {
       console.log("Using attachments instead of Blob storage...")
 
+      let countDetails = ""
+      if (imageCount > 0 && videoCount > 0) {
+        countDetails = `${imageCount} image${imageCount > 1 ? "s" : ""} and ${videoCount} video${videoCount > 1 ? "s" : ""}`
+      } else if (imageCount > 0) {
+        countDetails = `${imageCount} image${imageCount > 1 ? "s" : ""}`
+      } else if (videoCount > 0) {
+        countDetails = `${videoCount} video${videoCount > 1 ? "s" : ""}`
+      } else {
+        countDetails = `${totalCount} file${totalCount > 1 ? "s" : ""}`
+      }
+
       contentHtml = `
-        <div style="margin-top: 20px;">
-          <p><strong>Images are attached to this email.</strong></p>
-          <p>You have received ${files.length} image${files.length > 1 ? "s" : ""} as attachments.</p>
+        <div style="margin-top: 20px; font-family: 'Inter Tight', 'Inter', Helvetica, Arial, sans-serif;">
+          <p><strong>Files are attached to this email.</strong></p>
+          <p>You have received ${countDetails} as attachments.</p>
         </div>
       `
 
@@ -153,7 +168,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
 
       for (const file of files) {
         try {
-          const blob = await put(`images/${Date.now()}-${file.name}`, file, {
+          const blob = await put(`media/${Date.now()}-${file.name}`, file, {
             access: "public",
           })
 
@@ -166,7 +181,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
           console.error("Error uploading file to Blob:", uploadError)
           return {
             success: false,
-            error: "Failed to upload images. Please try again.",
+            error: "Failed to upload files. Please try again.",
             errorDetails: uploadError instanceof Error ? uploadError.message : "Unknown upload error",
           }
         }
@@ -175,17 +190,42 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
       console.log("Files uploaded successfully:", uploadedFiles.length, "files")
 
       contentHtml = `
-        <div style="margin-top: 20px;">
-          <p><strong>Your images:</strong></p>
+        <div style="margin-top: 20px; font-family: 'Inter Tight', 'Inter', Helvetica, Arial, sans-serif;">
+          <p style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">Your uploaded media:</p>
           ${uploadedFiles
-            .map(
-              (file, index) => `
-            <div style="margin-bottom: 15px;">
-              <p style="margin-bottom: 5px; font-weight: bold;">Image ${index + 1}: ${file.filename}</p>
-              <img src="${file.url}" alt="Image ${index + 1}" style="max-width: 100%; height: auto; border-radius: 4px; border: 1px solid #ddd;" />
-            </div>
-          `,
-            )
+            .map((file, index) => {
+              const isVideo = file.contentType?.startsWith("video/")
+              if (isVideo) {
+                return `
+                  <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background-color: #fcfcfc;">
+                    <p style="margin-top: 0; margin-bottom: 10px; font-weight: bold; font-size: 14px; color: #222;">
+                      Video ${index + 1}: ${file.filename}
+                    </p>
+                    <div style="margin-bottom: 12px;">
+                      <video src="${file.url}" controls style="max-width: 100%; max-height: 400px; border-radius: 6px; border: 1px solid #ddd; background-color: #000;">
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                    <p style="margin: 0; font-size: 13px;">
+                      <a href="${file.url}" download="${file.filename}" target="_blank" style="display: inline-block; padding: 8px 16px; background-color: #0f172a; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;">
+                        Download / Watch Video
+                      </a>
+                    </p>
+                  </div>
+                `
+              } else {
+                return `
+                  <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background-color: #fcfcfc;">
+                    <p style="margin-top: 0; margin-bottom: 10px; font-weight: bold; font-size: 14px; color: #222;">
+                      Image ${index + 1}: ${file.filename}
+                    </p>
+                    <div>
+                      <img src="${file.url}" alt="Image ${index + 1}" style="max-width: 100%; height: auto; border-radius: 6px; border: 1px solid #ddd;" />
+                    </div>
+                  </div>
+                `
+              }
+            })
             .join("")}
         </div>
       `
