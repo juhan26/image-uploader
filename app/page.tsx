@@ -38,6 +38,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { sendEmail } from "./actions"
 import { useToast } from "@/components/ui/use-toast"
+import { upload } from "@vercel/blob/client"
 import * as XLSX from "xlsx"
 import imageCompression from "browser-image-compression"
 import EmailHistory from "@/components/email-history"
@@ -714,6 +715,25 @@ export default function Page() {
     setProgress(10)
 
     try {
+      const uploadedFilesList = []
+
+      // Granular progress mapping: 10% -> 70% for uploading files
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const responseBlob = await upload(file.name, file, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+        })
+        uploadedFilesList.push({
+          url: responseBlob.url,
+          filename: file.name,
+          contentType: file.type,
+        })
+        setProgress(Math.round(10 + ((i + 1) / files.length) * 60))
+      }
+
+      setProgress(80)
+
       const formData = new FormData()
       formData.append("email", email)
 
@@ -726,73 +746,54 @@ export default function Page() {
       formData.append("templateSubject", selectedTemplate.subject)
       formData.append("templateBody", selectedTemplate.body)
       formData.append("senderName", selectedTemplate.senderName || "NBD CHARITY")
-
       formData.append("useAttachments", useAttachments.toString())
+      formData.append("preUploadedFiles", JSON.stringify(uploadedFilesList))
 
-      files.forEach((file) => {
-        formData.append("files", file)
-      })
+      const result = await sendEmail(formData)
+      setProgress(100)
 
-      setProgress(30)
+      if (result.success) {
+        toast({
+          title: "Success!",
+          description: `Media sent to ${email}`,
+        })
 
-      setTimeout(async () => {
-        try {
-          setProgress(50)
-          const result = await sendEmail(formData)
-          setProgress(100)
-
-          if (result.success) {
-            toast({
-              title: "Success!",
-              description: `Media sent to ${email}`,
-            })
-
-            if (result.historyItem) {
-              saveEmailHistory(result.historyItem)
-            }
-
-            setEmail("")
-            setFiles([])
-            setPreviews([])
-            setSelectedContact(null)
-            setNameQuery("")
-            setNumberQuery("")
-            if (fileInputRef.current) {
-              fileInputRef.current.value = ""
-            }
-          } else {
-            toast({
-              title: "Error",
-              description: result.error || "Failed to send media",
-              variant: "destructive",
-            })
-
-            if (result.errorDetails) {
-              console.error("Detailed error:", result.errorDetails)
-            }
-
-            if (result.historyItem) {
-              saveEmailHistory(result.historyItem)
-            }
-          }
-        } catch (error) {
-          console.error("Client error:", error)
-          toast({
-            title: "Error",
-            description: "Something went wrong. Please try again.",
-            variant: "destructive",
-          })
-        } finally {
-          setIsSubmitting(false)
+        if (result.historyItem) {
+          saveEmailHistory(result.historyItem)
         }
-      }, 500)
+
+        setEmail("")
+        setFiles([])
+        setPreviews([])
+        setSelectedContact(null)
+        setNameQuery("")
+        setNumberQuery("")
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ""
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to send media",
+          variant: "destructive",
+        })
+
+        if (result.errorDetails) {
+          console.error("Detailed error:", result.errorDetails)
+        }
+
+        if (result.historyItem) {
+          saveEmailHistory(result.historyItem)
+        }
+      }
     } catch (error) {
-      console.error("Client error:", error)
+      console.error("Client error during upload/sending:", error)
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
         variant: "destructive",
       })
+    } finally {
       setIsSubmitting(false)
     }
   }

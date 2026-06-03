@@ -104,7 +104,14 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     const contactNumber = formData.get("contactNumber") as string | null
     const contactName = formData.get("contactName") as string | null
 
-    if (!email || files.length === 0) {
+    const preUploadedFilesRaw = formData.get("preUploadedFiles") as string | null
+    const preUploadedFiles = preUploadedFilesRaw
+      ? (JSON.parse(preUploadedFilesRaw) as { url: string; filename: string; contentType: string }[])
+      : null
+
+    const hasFiles = files.length > 0 || (preUploadedFiles && preUploadedFiles.length > 0)
+
+    if (!email || !hasFiles) {
       return {
         success: false,
         error: "Email and files are required",
@@ -114,6 +121,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     console.log("Processing email send request:", {
       to: email,
       fileCount: files.length,
+      preUploadedCount: preUploadedFiles ? preUploadedFiles.length : 0,
       useAttachments,
       senderName,
     })
@@ -121,9 +129,15 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
     let contentHtml = ""
     const attachments: { filename: string; content: Buffer; contentType: string }[] = []
 
-    const imageCount = files.filter((f) => f.type.startsWith("image/")).length
-    const videoCount = files.filter((f) => f.type.startsWith("video/")).length
-    const totalCount = files.length
+    const imageCount = preUploadedFiles
+      ? preUploadedFiles.filter((f) => f.contentType.startsWith("image/")).length
+      : files.filter((f) => f.type.startsWith("image/")).length
+
+    const videoCount = preUploadedFiles
+      ? preUploadedFiles.filter((f) => f.contentType.startsWith("video/")).length
+      : files.filter((f) => f.type.startsWith("video/")).length
+
+    const totalCount = preUploadedFiles ? preUploadedFiles.length : files.length
 
     if (useAttachments) {
       console.log("Using attachments instead of Blob storage...")
@@ -146,48 +160,66 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         </div>
       `
 
-      for (const file of files) {
-        const buffer = await file.arrayBuffer()
-        attachments.push({
-          filename: file.name,
-          content: Buffer.from(buffer),
-          contentType: file.type,
-        })
-      }
-    } else {
-      if (!process.env.BLOB_READ_WRITE_TOKEN) {
-        console.error("Missing BLOB_READ_WRITE_TOKEN environment variable")
-        return {
-          success: false,
-          error: "File storage configuration is missing",
-        }
-      }
-
-      console.log("Uploading files to Vercel Blob...")
-      const uploadedFiles = []
-
-      for (const file of files) {
-        try {
-          const blob = await put(`media/${Date.now()}-${file.name}`, file, {
-            access: "public",
+      if (preUploadedFiles) {
+        for (const file of preUploadedFiles) {
+          const res = await fetch(file.url)
+          if (!res.ok) throw new Error(`Failed to download pre-uploaded file: ${file.filename}`)
+          const arrayBuffer = await res.arrayBuffer()
+          attachments.push({
+            filename: file.filename,
+            content: Buffer.from(arrayBuffer),
+            contentType: file.contentType,
           })
-
-          uploadedFiles.push({
-            url: blob.url,
+        }
+      } else {
+        for (const file of files) {
+          const buffer = await file.arrayBuffer()
+          attachments.push({
             filename: file.name,
+            content: Buffer.from(buffer),
             contentType: file.type,
           })
-        } catch (uploadError) {
-          console.error("Error uploading file to Blob:", uploadError)
-          return {
-            success: false,
-            error: "Failed to upload files. Please try again.",
-            errorDetails: uploadError instanceof Error ? uploadError.message : "Unknown upload error",
-          }
         }
       }
+    } else {
+      let uploadedFiles = []
 
-      console.log("Files uploaded successfully:", uploadedFiles.length, "files")
+      if (preUploadedFiles) {
+        uploadedFiles = preUploadedFiles
+      } else {
+        if (!process.env.BLOB_READ_WRITE_TOKEN) {
+          console.error("Missing BLOB_READ_WRITE_TOKEN environment variable")
+          return {
+            success: false,
+            error: "File storage configuration is missing",
+          }
+        }
+
+        console.log("Uploading files to Vercel Blob...")
+
+        for (const file of files) {
+          try {
+            const blob = await put(`media/${Date.now()}-${file.name}`, file, {
+              access: "public",
+            })
+
+            uploadedFiles.push({
+              url: blob.url,
+              filename: file.name,
+              contentType: file.type,
+            })
+          } catch (uploadError) {
+            console.error("Error uploading file to Blob:", uploadError)
+            return {
+              success: false,
+              error: "Failed to upload files. Please try again.",
+              errorDetails: uploadError instanceof Error ? uploadError.message : "Unknown upload error",
+            }
+          }
+        }
+
+        console.log("Files uploaded successfully:", uploadedFiles.length, "files")
+      }
 
       contentHtml = `
         <div style="margin-top: 20px; font-family: 'Inter Tight', 'Inter', Helvetica, Arial, sans-serif;">
@@ -254,7 +286,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         contactNumber: contactNumber || undefined,
         timestamp: Date.now(),
         status: "success",
-        imageCount: files.length,
+        imageCount: totalCount,
       }
 
       return {
@@ -272,7 +304,7 @@ export async function sendEmail(formData: FormData): Promise<SendEmailResponse> 
         contactNumber: contactNumber || undefined,
         timestamp: Date.now(),
         status: "failed",
-        imageCount: files.length,
+        imageCount: totalCount,
         errorMessage: emailError instanceof Error ? emailError.message : "An unknown error occurred",
       }
 
